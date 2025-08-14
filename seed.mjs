@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { hashPassword } from "./lib/password"
+import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
@@ -14,14 +14,14 @@ async function main() {
 	}
 
 	// Create admin account
-	const adminPassword = await hashPassword("admin123")
+	const adminPasswordHash = await bcrypt.hash("admin123", 12)
 	await prisma.admin.upsert({
 		where: { email: "admin@hackathon.gov.sa" },
 		update: {},
-		create: { name: "مدير النظام", email: "admin@hackathon.gov.sa", password_hash: adminPassword },
+		create: { name: "مدير النظام", email: "admin@hackathon.gov.sa", password_hash: adminPasswordHash },
 	})
 
-	// Create real judges with specific emails and passwords
+	// Judges
 	const judges = [
 		{ name: "الدكتور /  نزار بن حسن محمد الشريف", email: "nizar.alshareef@hackathon.gov.sa", password: "Nizar@2025" },
 		{ name: "المهندس/ هاني محمد الغامدي", email: "hani.alghamdi@hackathon.gov.sa", password: "Hani@2025" },
@@ -31,7 +31,7 @@ async function main() {
 	]
 
 	for (const judge of judges) {
-		const password_hash = await hashPassword(judge.password)
+		const password_hash = await bcrypt.hash(judge.password, 12)
 		await prisma.judge.upsert({
 			where: { email: judge.email },
 			update: { name: judge.name, password_hash },
@@ -39,7 +39,7 @@ async function main() {
 		})
 	}
 
-	console.log("Database seeded successfully!")
+	console.log("Seeding completed successfully")
 }
 
 main()
@@ -49,4 +49,4 @@ main()
 	})
 	.finally(async () => {
 		await prisma.$disconnect()
-	})
+	}) 

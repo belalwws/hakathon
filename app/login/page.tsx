@@ -8,12 +8,6 @@ import { Users, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 
-const MOCK_USERS = [
-	{ email: "judge1@hackathon.gov.sa", password: "judge123", name: "المحكم الأول" },
-	{ email: "judge2@hackathon.gov.sa", password: "judge123", name: "المحكم الثاني" },
-	{ email: "judge3@hackathon.gov.sa", password: "judge123", name: "المحكم الثالث" },
-]
-
 export default function LoginPage() {
 	const [loginEmail, setLoginEmail] = useState("")
 	const [loginPassword, setLoginPassword] = useState("")
@@ -75,15 +69,6 @@ export default function LoginPage() {
 						تسجيل الدخول
 					</button>
 				</form>
-
-				<div className="mt-6 space-y-3">
-					<p className="text-sm text-[#8b7632] text-center mb-3">حسابات تجريبية للاختبار:</p>
-					{MOCK_USERS.map((u, index) => (
-						<button key={index} onClick={() => { setLoginEmail(u.email); setLoginPassword(u.password); setLoginError("") }} className="w-full bg-[#c3e956]/10 border border-[#c3e956]/30 text-[#01645e] hover:bg-[#01645e]/10 hover:border-[#01645e] py-2 px-4 rounded-lg text-sm transition-all duration-200">
-							{u.name}: {u.email}
-						</button>
-					))}
-				</div>
 			</motion.div>
 		</div>
 	)
