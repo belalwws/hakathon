@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Judge {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  scores        Score[]
+  
+  @@map("judges")
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  team_number Int      @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  scores      Score[]
+  
+  @@map("teams")
+}
+
+model Score {
+  id       String @id @default(cuid())
+  judge_id String
+  team_id  String
+  score    Float
+  createdAt DateTime @default(now())
+  
+  // Relations
+  judge    Judge @relation(fields: [judge_id], references: [id], onDelete: Cascade)
+  team     Team  @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  
+  // Ensure one score per judge per team
+  @@unique([judge_id, team_id])
+  @@map("scores")
+}
+
+model Admin {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("admins")
+}
