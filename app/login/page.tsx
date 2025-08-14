@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Users, Eye, EyeOff } from "lucide-react"
+import { Users, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 
@@ -13,6 +13,7 @@ export default function LoginPage() {
 	const [loginPassword, setLoginPassword] = useState("")
 	const [showPassword, setShowPassword] = useState(false)
 	const [loginError, setLoginError] = useState("")
+	const [isSubmitting, setIsSubmitting] = useState(false)
 	const { login, user } = useAuth()
 	const router = useRouter()
 
@@ -24,11 +25,14 @@ export default function LoginPage() {
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setLoginError("")
+		setIsSubmitting(true)
 		try {
 			const success = await login(loginEmail, loginPassword)
 			if (!success) setLoginError("بيانات الدخول غير صحيحة")
 		} catch (err) {
 			setLoginError("حدث خطأ أثناء تسجيل الدخول")
+		} finally {
+			setIsSubmitting(false)
 		}
 	}
 
@@ -43,17 +47,17 @@ export default function LoginPage() {
 					<p className="text-[#8b7632]">ادخل بياناتك للوصول إلى نظام التقييم</p>
 				</div>
 
-				<form onSubmit={handleLogin} className="space-y-6">
+				<form onSubmit={handleLogin} className="space-y-6" aria-busy={isSubmitting}>
 					<div>
 						<label className="block text-[#01645e] font-medium mb-2">البريد الإلكتروني</label>
-						<input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="w-full p-4 bg-[#c3e956]/10 border border-[#c3e956]/30 rounded-xl text-[#01645e] placeholder:text-[#8b7632] focus:border-[#01645e] focus:ring-[#01645e]/20" placeholder="أدخل البريد الإلكتروني" required />
+						<input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} disabled={isSubmitting} className="w-full p-4 bg-[#c3e956]/10 border border-[#c3e956]/30 rounded-xl text-[#01645e] placeholder:text-[#8b7632] focus:border-[#01645e] focus:ring-[#01645e]/20 disabled:opacity-60 disabled:cursor-not-allowed" placeholder="أدخل البريد الإلكتروني" required />
 					</div>
 
 					<div>
 						<label className="block text-[#01645e] font-medium mb-2">كلمة المرور</label>
 						<div className="relative">
-							<input type={showPassword ? "text" : "password"} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="w-full p-4 bg-[#c3e956]/10 border border-[#c3e956]/30 rounded-xl text-[#01645e] placeholder:text-[#8b7632] focus:border-[#01645e] focus:ring-[#01645e]/20 pr-12" placeholder="أدخل كلمة المرور" required />
-							<button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8b7632] hover:text-[#01645e]">
+							<input type={showPassword ? "text" : "password"} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} disabled={isSubmitting} className="w-full p-4 bg-[#c3e956]/10 border border-[#c3e956]/30 rounded-xl text-[#01645e] placeholder:text-[#8b7632] focus:border-[#01645e] focus:ring-[#01645e]/20 pr-12 disabled:opacity-60 disabled:cursor-not-allowed" placeholder="أدخل كلمة المرور" required />
+							<button type="button" onClick={() => setShowPassword(!showPassword)} disabled={isSubmitting} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8b7632] hover:text-[#01645e] disabled:opacity-50">
 								{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
 							</button>
 						</div>
@@ -65,8 +69,15 @@ export default function LoginPage() {
 						</div>
 					)}
 
-					<button type="submit" className="w-full bg-gradient-to-r from-[#01645e] to-[#3ab666] hover:from-[#014a46] hover:to-[#2d8f52] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300">
-						تسجيل الدخول
+					<button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-[#01645e] to-[#3ab666] hover:from-[#014a46] hover:to-[#2d8f52] disabled:from-gray-400 disabled:to-gray-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed">
+						{isSubmitting ? (
+							<span className="flex items-center justify-center gap-2">
+								<Loader2 size={20} className="animate-spin" />
+								جاري تسجيل الدخول...
+							</span>
+						) : (
+							<span>تسجيل الدخول</span>
+						)}
 					</button>
 				</form>
 			</motion.div>
