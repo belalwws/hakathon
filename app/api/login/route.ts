@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { comparePassword, generateToken } from "@/lib/auth"
+import { generateToken } from "@/lib/auth"
+import { comparePassword } from "@/lib/password"
 import { validateRequest, loginSchema } from "@/lib/validation"
 import { rateLimit } from "@/lib/rate-limit"
 

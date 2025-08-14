@@ -16,6 +16,16 @@ const protectedRoutes = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Skip Next.js internals and static assets
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.startsWith("/assets") ||
+    pathname.startsWith("/static")
+  ) {
+    return NextResponse.next()
+  }
+
   // Check if the route needs protection
   const requiredRoles = protectedRoutes[pathname as keyof typeof protectedRoutes]
   if (!requiredRoles) {
@@ -81,5 +91,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/teams", "/api/submit-score", "/api/results", "/api/admin/results", "/api/admin/reset", "/judge", "/admin"],
+  matcher: ["/api/:path*", "/judge/:path*", "/admin/:path*"],
 }

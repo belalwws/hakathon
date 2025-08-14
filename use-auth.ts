@@ -2,13 +2,25 @@
 
 import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
-import { verifyToken } from "@/lib/auth"
 
 interface User {
   id: string
   name: string
   email: string
   role: "admin" | "judge"
+}
+
+function decodeJwtPayload<T = any>(token: string): T | null {
+  try {
+    const base64 = token.split(".")[1]
+    if (!base64) return null
+    const normalized = base64.replace(/-/g, "+").replace(/_/g, "/")
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4)
+    const json = typeof window !== "undefined" ? atob(padded) : Buffer.from(padded, "base64").toString("utf8")
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
 }
 
 export function useAuth() {
@@ -18,7 +30,7 @@ export function useAuth() {
   useEffect(() => {
     const token = Cookies.get("auth-token")
     if (token) {
-      const payload = verifyToken(token)
+      const payload = decodeJwtPayload<{ userId: string; name: string; email: string; role: User["role"] }>(token)
       if (payload) {
         setUser({
           id: payload.userId,

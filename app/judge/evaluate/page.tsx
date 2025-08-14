@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star, ArrowLeft, ArrowRight, CheckCircle, Trophy, Crown } from "lucide-react"
@@ -91,7 +91,7 @@ function StarRating({ rating, onRate, color }: { rating: number; onRate: (n: num
 	)
 }
 
-export default function JudgeEvaluatePage() {
+function EvaluateContent() {
 	const router = useRouter()
 	const params = useSearchParams()
 	const teamId = params.get("teamId") || ""
@@ -220,5 +220,13 @@ export default function JudgeEvaluatePage() {
 				</div>
 			</div>
 		</div>
+	)
+}
+
+export default function JudgeEvaluatePage() {
+	return (
+		<Suspense fallback={<div className="p-6">جاري التحميل...</div>}>
+			<EvaluateContent />
+		</Suspense>
 	)
 } 
