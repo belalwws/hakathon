@@ -2,16 +2,15 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { verifyToken } from "@/lib/auth"
 
-// Define protected routes and their required roles
-const protectedRoutes = {
-  "/api/teams": ["judge"],
-  "/api/submit-score": ["judge"],
-  "/api/results": ["admin"],
-  "/api/admin/results": ["admin"],
-  "/api/admin/reset": ["admin"],
-  "/judge": ["judge"],
-  "/admin": ["admin"],
-}
+// Define protected route prefixes and their required roles
+const protectedRoutes: { prefix: string; roles: ("admin" | "judge")[] }[] = [
+  { prefix: "/api/teams", roles: ["judge"] },
+  { prefix: "/api/submit-score", roles: ["judge"] },
+  { prefix: "/api/results", roles: ["admin"] },
+  { prefix: "/api/admin", roles: ["admin"] },
+  { prefix: "/judge", roles: ["judge"] },
+  { prefix: "/admin", roles: ["admin"] },
+]
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -26,9 +25,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if the route needs protection
-  const requiredRoles = protectedRoutes[pathname as keyof typeof protectedRoutes]
-  if (!requiredRoles) {
+  // Find matching protected route by prefix
+  const route = protectedRoutes.find((r) => pathname.startsWith(r.prefix))
+  if (!route) {
     return NextResponse.next()
   }
 
@@ -62,7 +61,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if user has required role
-  if (!requiredRoles.includes(payload.role)) {
+  if (!route.roles.includes(payload.role)) {
     // For API routes, return 403
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "غير مصرح بالوصول - صلاحيات غير كافية" }, { status: 403 })

@@ -4,8 +4,8 @@ import bcrypt from "bcryptjs"
 const prisma = new PrismaClient()
 
 async function main() {
-	// Create teams (1-20)
-	for (let i = 1; i <= 20; i++) {
+	// Create teams (1-19) instead of 20
+	for (let i = 1; i <= 19; i++) {
 		await prisma.team.upsert({
 			where: { team_number: i },
 			update: {},
@@ -21,25 +21,48 @@ async function main() {
 		create: { name: "مدير النظام", email: "admin@hackathon.gov.sa", password_hash: adminPasswordHash },
 	})
 
-	// Judges
+	// الأيميلات المسموح بها للمحكمين الـ 5
+	const allowedEmails = [
+		"Nizar@bu.edu.sa",
+		"H.Mohammed@albaha.gov.sa", 
+		"awaji@gdp.gov.sa",
+		"Yzrashidi@gdp.gov.sa",
+		"Chairman@sic.org.sa"
+	]
+
+	// حذف جميع المحكمين الآخرين (الذين ليسوا في القائمة المسموحة)
+	const deletedJudges = await prisma.judge.deleteMany({
+		where: {
+			email: {
+				notIn: allowedEmails
+			}
+		}
+	})
+	console.log(`تم حذف ${deletedJudges.count} محكم آخر`)
+
+	// الـ 5 محكمين المحددين فقط
 	const judges = [
-		{ name: "الدكتور /  نزار بن حسن محمد الشريف", email: "nizar.alshareef@hackathon.gov.sa", password: "Nizar@2025" },
-		{ name: "المهندس/ هاني محمد الغامدي", email: "hani.alghamdi@hackathon.gov.sa", password: "Hani@2025" },
-		{ name: "عقيد/ على بن صالح الزهراني", email: "ali.alzahrani@hackathon.gov.sa", password: "Ali@2025" },
-		{ name: "نقيب مهندس/يعقوب زعل الرشيدي", email: "yaqoub.alrashidi@hackathon.gov.sa", password: "Yaqoub@2025" },
-		{ name: "المهندس /  ماجد بن محمد بن عنزان", email: "majed.anzan@hackathon.gov.sa", password: "Majed@2025" },
+		{ name: "د. نزار بن حسن محمد الشريف", email: "Nizar@bu.edu.sa", password: "Nizar@2025" },
+		{ name: "مهندس هاني الغامدي", email: "H.Mohammed@albaha.gov.sa", password: "Hani@2025" },
+		{ name: "العقيد علي بن صالح الزهراني", email: "awaji@gdp.gov.sa", password: "Ali@2025" },
+		{ name: "نقيب مهندس/ يعقوب زعل الرشيدي", email: "Yzrashidi@gdp.gov.sa", password: "Yaqoub@2025" },
+		{ name: "م. ماجد العنزوان (رئيس نادي الابتكار السعودي)", email: "Chairman@sic.org.sa", password: "Majed@2025" },
 	]
 
 	for (const judge of judges) {
 		const password_hash = await bcrypt.hash(judge.password, 12)
 		await prisma.judge.upsert({
 			where: { email: judge.email },
-			update: { name: judge.name, password_hash },
-			create: { name: judge.name, email: judge.email, password_hash },
+			update: { name: judge.name, password_hash, is_active: true },
+			create: { name: judge.name, email: judge.email, password_hash, is_active: true },
 		})
 	}
 
-	console.log("Seeding completed successfully")
+	console.log("تم إنشاء/تحديث الـ 5 محكمين المحددين بنجاح")
+	console.log("المحكمين الموجودين الآن:")
+	judges.forEach((judge, index) => {
+		console.log(`${index + 1}. ${judge.name} - ${judge.email}`)
+	})
 }
 
 main()

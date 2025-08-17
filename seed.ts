@@ -4,8 +4,8 @@ import { hashPassword } from "./lib/password"
 const prisma = new PrismaClient()
 
 async function main() {
-	// Create teams (1-20)
-	for (let i = 1; i <= 20; i++) {
+	// Create teams (1-19) instead of 20
+	for (let i = 1; i <= 19; i++) {
 		await prisma.team.upsert({
 			where: { team_number: i },
 			update: {},
@@ -21,13 +21,13 @@ async function main() {
 		create: { name: "مدير النظام", email: "admin@hackathon.gov.sa", password_hash: adminPassword },
 	})
 
-	// Create real judges with specific emails and passwords
+	// Create real judges with updated emails and names
 	const judges = [
-		{ name: "الدكتور /  نزار بن حسن محمد الشريف", email: "nizar.alshareef@hackathon.gov.sa", password: "Nizar@2025" },
-		{ name: "المهندس/ هاني محمد الغامدي", email: "hani.alghamdi@hackathon.gov.sa", password: "Hani@2025" },
-		{ name: "عقيد/ على بن صالح الزهراني", email: "ali.alzahrani@hackathon.gov.sa", password: "Ali@2025" },
-		{ name: "نقيب مهندس/يعقوب زعل الرشيدي", email: "yaqoub.alrashidi@hackathon.gov.sa", password: "Yaqoub@2025" },
-		{ name: "المهندس /  ماجد بن محمد بن عنزان", email: "majed.anzan@hackathon.gov.sa", password: "Majed@2025" },
+		{ name: "د. نزار بن حسن محمد الشريف", email: "Nizar@bu.edu.sa", password: "Nizar@2025" },
+		{ name: "مهندس هاني الغامدي", email: "H.Mohammed@albaha.gov.sa", password: "Hani@2025" },
+		{ name: "العقيد علي بن صالح الزهراني", email: "awaji@gdp.gov.sa", password: "Ali@2025" },
+		{ name: "نقيب مهندس/ يعقوب زعل الرشيدي", email: "Yzrashidi@gdp.gov.sa", password: "Yaqoub@2025" },
+		{ name: "م. ماجد العنزوان (رئيس نادي الابتكار السعودي)", email: "Chairman@sic.org.sa", password: "Majed@2025" },
 	]
 
 	for (const judge of judges) {
