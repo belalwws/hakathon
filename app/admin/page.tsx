@@ -79,7 +79,7 @@ export default function AdminPresentationPage() {
 			},
 			{
 				name: "المديرية العامة للجوازات",
-				teamRange: [9, 12],
+				teamRange: [9, 11],
 				winnerCount: 1,
 				color: "text-blue-600",
 				icon: "🛂",
@@ -90,8 +90,8 @@ export default function AdminPresentationPage() {
 			},
 			{
 				name: "إمارة الباحة",
-				teamRange: [13, 19],
-				winnerCount: 7,
+				teamRange: [12, 18],
+				winnerCount: 3,
 				color: "text-green-600",
 				icon: "🏛️",
 				gradient: "from-[#c3e956] via-[#3ab666] to-[#01645e]",
@@ -212,7 +212,7 @@ export default function AdminPresentationPage() {
 					transition={{ duration: 1.5, repeat: Infinity }}
 					className="text-3xl font-bold text-white drop-shadow-lg"
 				>
-					جاري تحضير النتائج...
+					جاري تحضير نتائج هاكاثون الابتكار...
 				</motion.h2>
 			</div>
 		</div>
@@ -714,7 +714,7 @@ export default function AdminPresentationPage() {
 						</motion.div>
 						<div>
 							<h1 className="text-4xl font-bold bg-gradient-to-r from-white via-[#c3e956] to-white bg-clip-text text-transparent">
-								نتائج الهاكاثون الإبداعي
+								نتائج هاكاثون الابتكار في الخدمات الحكومية الافتراضي
 							</h1>
 							<p className="text-white/90 text-lg mt-2">🏆 مسابقة الابتكار التقني 2025</p>
 						</div>

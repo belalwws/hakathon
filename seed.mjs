@@ -4,8 +4,18 @@ import bcrypt from "bcryptjs"
 const prisma = new PrismaClient()
 
 async function main() {
-	// Create teams (1-19) instead of 20
-	for (let i = 1; i <= 19; i++) {
+	// حذف الفريق رقم 19 إذا كان موجوداً
+	const deletedTeam = await prisma.team.deleteMany({
+		where: {
+			team_number: {
+				gt: 18  // أكبر من 18
+			}
+		}
+	})
+	console.log(`تم حذف ${deletedTeam.count} فريق زائد`)
+
+	// Create teams (1-18) instead of 19
+	for (let i = 1; i <= 18; i++) {
 		await prisma.team.upsert({
 			where: { team_number: i },
 			update: {},
