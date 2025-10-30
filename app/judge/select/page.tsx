@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { Users, Lock } from "lucide-react"
 
 interface Team { id: string; team_number: number }
 
 export default function JudgeSelectPage() {
+	const { user, loading: authLoading } = useAuth()
 	const router = useRouter()
 	const [teams, setTeams] = useState<Team[]>([])
 	const [evaluatedIds, setEvaluatedIds] = useState<string[]>([])
@@ -14,19 +16,32 @@ export default function JudgeSelectPage() {
 	const [error, setError] = useState("")
 
 	useEffect(() => {
+		if (authLoading) return
+		if (!user || user.role !== 'judge') return
+
 		const load = async () => {
 			try {
 				setLoading(true)
-				const [teamsRes, scoredRes] = await Promise.all([
-					fetch("/api/teams", { cache: "no-store" }),
-					fetch("/api/judge/my-scores", { cache: "no-store" }),
-				])
-				if (!teamsRes.ok) throw new Error("فشل في جلب الفرق")
-				const teamsData = await teamsRes.json()
-				setTeams(teamsData.teams || [])
-				if (scoredRes.ok) {
-					const scoredData = await scoredRes.json()
-					setEvaluatedIds(scoredData.team_ids || [])
+				const response = await fetch("/api/judge/hackathons", { cache: "no-store" })
+
+				if (response.status === 401) {
+					return
+				}
+
+				if (!response.ok) throw new Error("فشل في جلب الفرق")
+				const data = await response.json()
+
+				if (data.hackathons && data.hackathons.length > 0) {
+					const hackathon = data.hackathons[0]
+					if (hackathon.evaluationOpen) {
+						// Redirect to evaluation page instead of showing team selection
+						router.push('/judge/evaluation')
+						return
+					} else {
+						setError("التقييم مغلق حالياً")
+					}
+				} else {
+					setError("لا توجد هاكاثونات متاحة للتقييم")
 				}
 			} catch (e: any) {
 				setError(e.message || "خطأ")
@@ -35,7 +50,7 @@ export default function JudgeSelectPage() {
 			}
 		}
 		load()
-	}, [])
+	}, [user, authLoading, router])
 
 	// دالة لتحديد الفريق التالي المطلوب تقييمه
 	const getNextTeamToEvaluate = () => {
@@ -59,8 +74,54 @@ export default function JudgeSelectPage() {
 		return "locked" // مقفل
 	}
 
-	if (loading) return <div className="p-6">جاري التحميل...</div>
-	if (error) return <div className="p-6 text-red-600">{error}</div>
+	if (loading) {
+		return (
+			<div className="min-h-screen bg-gradient-to-br from-[#c3e956]/10 to-[#3ab666]/10 flex items-center justify-center">
+				<div className="text-center">
+					<div className="w-16 h-16 border-4 border-[#01645e]/20 border-t-[#01645e] rounded-full animate-spin mx-auto mb-4"></div>
+					<p className="text-[#01645e] font-semibold">جاري التحميل...</p>
+				</div>
+			</div>
+		)
+	}
+
+	if (!user) {
+		return (
+			<div className="min-h-screen bg-gradient-to-br from-[#c3e956]/10 to-[#3ab666]/10 flex items-center justify-center">
+				<div className="text-center max-w-md mx-auto p-8">
+					<Lock className="w-16 h-16 text-[#8b7632] mx-auto mb-4" />
+					<h3 className="text-xl font-semibold text-[#01645e] mb-2">تسجيل الدخول مطلوب</h3>
+					<p className="text-[#8b7632] mb-6">يجب تسجيل الدخول كمحكم للوصول لصفحة التقييم</p>
+					<a
+						href="/login"
+						className="inline-block bg-gradient-to-r from-[#01645e] to-[#3ab666] text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-shadow"
+					>
+						تسجيل الدخول
+					</a>
+				</div>
+			</div>
+		)
+	}
+
+	if (error) {
+		return (
+			<div className="min-h-screen bg-gradient-to-br from-[#c3e956]/10 to-[#3ab666]/10 flex items-center justify-center">
+				<div className="text-center max-w-md mx-auto p-8">
+					<div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<span className="text-red-500 text-2xl">⚠️</span>
+					</div>
+					<h3 className="text-xl font-semibold text-[#01645e] mb-2">خطأ في التحميل</h3>
+					<p className="text-red-600 mb-6">{error}</p>
+					<button
+						onClick={() => window.location.reload()}
+						className="bg-gradient-to-r from-[#01645e] to-[#3ab666] text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-shadow"
+					>
+						إعادة المحاولة
+					</button>
+				</div>
+			</div>
+		)
+	}
 
 	const nextTeam = getNextTeamToEvaluate()
 	const sortedTeams = teams.sort((a, b) => a.team_number - b.team_number)

@@ -1,0 +1,92 @@
+{
+  "name": "hackpro-saas",
+  "description": "Professional Hackathon Management Platform - HackPro SaaS",
+  "keywords": ["hackathon", "saas", "management", "nextjs", "prisma"],
+  "repository": "https://github.com/belalwws/hackpro-saas",
+  "logo": "https://res.cloudinary.com/your-cloud/image/upload/v1/logo.png",
+  "success_url": "/",
+  "image": "heroku/nodejs",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL database URL (Neon recommended)",
+      "required": true
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT tokens - generate a strong random string",
+      "required": true,
+      "generator": "secret"
+    },
+    "NEXTAUTH_SECRET": {
+      "description": "NextAuth secret - generate a strong random string",
+      "required": true,
+      "generator": "secret"
+    },
+    "NEXTAUTH_URL": {
+      "description": "Your app URL (will be set automatically by DigitalOcean)",
+      "required": true
+    },
+    "NEXT_PUBLIC_BASE_URL": {
+      "description": "Public base URL",
+      "required": true
+    },
+    "NEXT_PUBLIC_APP_URL": {
+      "description": "Public app URL",
+      "required": true
+    },
+    "GMAIL_USER": {
+      "description": "Gmail email address for sending emails",
+      "required": false
+    },
+    "GMAIL_PASS": {
+      "description": "Gmail app password (use App Password, not regular password)",
+      "required": false
+    },
+    "MAIL_FROM": {
+      "description": "Email sender address",
+      "value": "HackPro <noreply@hackpro.com>"
+    },
+    "SENDGRID_API_KEY": {
+      "description": "SendGrid API key (for production email sending)",
+      "required": false
+    },
+    "CLOUDINARY_CLOUD_NAME": {
+      "description": "Cloudinary cloud name for file uploads",
+      "required": true
+    },
+    "CLOUDINARY_API_KEY": {
+      "description": "Cloudinary API key",
+      "required": true
+    },
+    "CLOUDINARY_API_SECRET": {
+      "description": "Cloudinary API secret",
+      "required": true,
+      "generator": "secret"
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Stripe secret key (optional for payments)",
+      "required": false
+    },
+    "STRIPE_PUBLISHABLE_KEY": {
+      "description": "Stripe publishable key (optional for payments)",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "scripts": {
+    "postdeploy": "npx prisma generate && npx prisma db push"
+  }
+}

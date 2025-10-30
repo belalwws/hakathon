@@ -5,17 +5,17 @@ import { verifyToken } from "@/lib/auth"
 async function computeResults() {
   // Average per team
   const results = await prisma.score.groupBy({
-    by: ["team_id"],
+    by: ["teamId"],
     _avg: { score: true },
     _count: { score: true },
   })
 
   const teamsWithAverages = await Promise.all(
-    results.map(async (avg) => {
-      const team = await prisma.team.findUnique({ where: { id: avg.team_id } })
+    results.map(async (avg: any) => {
+      const team = await prisma.team.findUnique({ where: { id: avg.teamId } })
       return {
-        team_id: avg.team_id,
-        team_number: team?.team_number,
+        team_id: avg.teamId,
+        team_number: team?.teamNumber,
         average_score: Math.round((avg._avg.score || 0) * 100) / 100,
         total_evaluations: avg._count.score,
       }
@@ -25,18 +25,27 @@ async function computeResults() {
   teamsWithAverages.sort((a, b) => (b.average_score || 0) - (a.average_score || 0))
 
   const allScores = await prisma.score.findMany({
-    include: { team: true, judge: { select: { id: true, name: true, email: true } } },
-    orderBy: [{ team: { team_number: "asc" } }, { judge: { name: "asc" } }],
+    include: {
+      team: true,
+      judge: {
+        include: {
+          user: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      }
+    },
+    orderBy: [{ team: { teamNumber: "asc" } }, { judge: { user: { name: "asc" } } }],
   })
 
   const detailedResults = teamsWithAverages.map((team) => {
-    const teamScores = allScores.filter((s) => s.team_id === team.team_id)
+    const teamScores = allScores.filter((s) => s.teamId === team.team_id)
     return {
       ...team,
       individual_scores: teamScores.map((s) => ({
-        judge_id: s.judge_id,
-        judge_name: s.judge.name,
-        judge_email: s.judge.email,
+        judge_id: s.judgeId,
+        judge_name: s.judge.user.name,
+        judge_email: s.judge.user.email,
         score: s.score,
         created_at: s.createdAt,
       })),
@@ -54,8 +63,8 @@ async function computeResults() {
     team_averages: teamsWithAverages,
     detailed_results: detailedResults,
     all_individual_scores: allScores.map((s) => ({
-      team_number: s.team.team_number,
-      judge_name: s.judge.name,
+      team_number: s.team.teamNumber,
+      judge_name: s.judge.user.name,
       score: s.score,
       created_at: s.createdAt,
     })),

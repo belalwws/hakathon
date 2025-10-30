@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
     const teams = await prisma.team.findMany({
       select: {
         id: true,
-        team_number: true,
+        teamNumber: true,
       },
       orderBy: {
-        team_number: "asc",
+        teamNumber: "asc",
       },
     })
 

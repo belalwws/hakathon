@@ -1,0 +1,369 @@
+/* Theater Effects CSS - تأثيرات المسرح */
+
+/* Shake Animation for Drum Roll */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+/* Spotlight Effect */
+@keyframes spotlight {
+  0% { 
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.spotlight-effect {
+  animation: spotlight 2s ease-out;
+}
+
+/* Curtain Animation */
+@keyframes curtain-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes curtain-right {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+.curtain-left {
+  animation: curtain-left 3s ease-in-out forwards;
+}
+
+.curtain-right {
+  animation: curtain-right 3s ease-in-out forwards;
+}
+
+/* Fireworks Burst */
+@keyframes firework-burst {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(2) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.firework {
+  animation: firework-burst 2s ease-out forwards;
+}
+
+/* Confetti Fall */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  animation: confetti-fall 4s linear forwards;
+}
+
+/* Glow Effect */
+@keyframes glow {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 40px rgba(255, 215, 0, 1);
+  }
+}
+
+.text-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Pulse Effect */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Stage Lighting */
+.stage-light {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.1) 30%,
+    transparent 70%
+  );
+}
+
+/* Theater Curtain Texture */
+.curtain-texture {
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      rgba(139, 69, 19, 0.3) 0px,
+      rgba(139, 69, 19, 0.3) 20px,
+      transparent 20px,
+      transparent 40px
+    ),
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.2) 0%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+}
+
+/* Winner Card Special Effects */
+.winner-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.winner-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+}
+
+/* Drum Roll Visual Effect */
+@keyframes drum-beat {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.drum-beat {
+  animation: drum-beat 0.3s ease-in-out infinite;
+}
+
+/* Applause Wave Effect */
+@keyframes applause-wave {
+  0% { 
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+  50% { 
+    transform: translateY(-10px) scale(1.1);
+    opacity: 0.8;
+  }
+  100% { 
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+}
+
+.applause-wave {
+  animation: applause-wave 0.8s ease-in-out infinite;
+}
+
+/* Stage Floor Effect */
+.stage-floor {
+  background: 
+    linear-gradient(
+      90deg,
+      rgba(139, 69, 19, 0.1) 0%,
+      rgba(160, 82, 45, 0.2) 50%,
+      rgba(139, 69, 19, 0.1) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(139, 69, 19, 0.05) 0px,
+      rgba(139, 69, 19, 0.05) 2px,
+      transparent 2px,
+      transparent 20px
+    );
+}
+
+/* Crown Animation */
+@keyframes crown-float {
+  0%, 100% { 
+    transform: translateY(0) rotate(0deg);
+  }
+  25% { 
+    transform: translateY(-5px) rotate(2deg);
+  }
+  50% { 
+    transform: translateY(-10px) rotate(0deg);
+  }
+  75% { 
+    transform: translateY(-5px) rotate(-2deg);
+  }
+}
+
+.crown-float {
+  animation: crown-float 3s ease-in-out infinite;
+}
+
+/* Sparkle Effect */
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+.sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+/* Theater Entrance */
+@keyframes theater-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotateY(180deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1) rotateY(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+.theater-entrance {
+  animation: theater-entrance 1.5s ease-out forwards;
+}
+
+/* Gradient Text Animation */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-text {
+  background: linear-gradient(
+    45deg,
+    #ffd700,
+    #ff6b35,
+    #f7931e,
+    #ffd700
+  );
+  background-size: 300% 300%;
+  animation: gradient-shift 3s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Theater Lighting Sweep */
+@keyframes light-sweep {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(100vw) skewX(-15deg); }
+}
+
+.light-sweep {
+  animation: light-sweep 2s ease-in-out;
+}
+
+/* Position Card Reveal */
+@keyframes card-reveal {
+  0% {
+    opacity: 0;
+    transform: rotateY(180deg) scale(0.8);
+  }
+  50% {
+    opacity: 0.5;
+    transform: rotateY(90deg) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: rotateY(0deg) scale(1);
+  }
+}
+
+.card-reveal {
+  animation: card-reveal 1.2s ease-out forwards;
+}
+
+/* Responsive Theater Effects */
+@media (max-width: 768px) {
+  .animate-shake {
+    animation-duration: 0.3s;
+  }
+  
+  .firework {
+    animation-duration: 1.5s;
+  }
+  
+  .confetti {
+    animation-duration: 3s;
+  }
+}
+
+/* High Performance Mode */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .firework,
+  .confetti,
+  .sparkle,
+  .crown-float {
+    animation: none;
+  }
+  
+  .text-glow,
+  .pulse-glow {
+    animation: none;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+}

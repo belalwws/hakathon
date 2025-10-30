@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { verifyToken } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
@@ -16,27 +15,47 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "غير مصرح بالوصول - الأدمن فقط" }, { status: 403 })
     }
 
-    // Get all scores with team and judge information
+    // Get all scores with team and judge information (lazy Prisma import)
+    let prisma: any
+    try {
+      prisma = (await import("@/lib/prisma")).prisma
+    } catch (_) {
+      prisma = null
+    }
+
+    if (!prisma) {
+      return NextResponse.json({
+        summary: { total_teams: 0, total_judges: 0, winner: null },
+        team_averages: [],
+        detailed_results: [],
+        all_individual_scores: []
+      })
+    }
+
     const allScores = await prisma.score.findMany({
       include: {
         team: true,
         judge: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              }
+            }
+          }
         },
       },
       orderBy: [
-        { team: { team_number: "asc" } },
-        { judge: { name: "asc" } },
+        { team: { teamNumber: "asc" } },
+        { judge: { user: { name: "asc" } } },
       ],
     })
 
     // Calculate average scores for each team
     const teamAverages = await prisma.score.groupBy({
-      by: ["team_id"],
+      by: ["teamId"],
       _avg: {
         score: true,
       },
@@ -47,13 +66,13 @@ export async function GET(request: NextRequest) {
 
     // Get team details and combine with averages
     const teamsWithAverages = await Promise.all(
-      teamAverages.map(async (avg: { team_id: string; _avg: { score: number | null }; _count: { score: number } }) => {
+      teamAverages.map(async (avg: { teamId: string; _avg: { score: number | null }; _count: { score: number } }) => {
         const team = await prisma.team.findUnique({
-          where: { id: avg.team_id },
+          where: { id: avg.teamId },
         })
 
         return {
-          team_id: avg.team_id,
+          team_id: avg.teamId,
           team_number: team?.team_number,
           average_score: Math.round((avg._avg.score || 0) * 100) / 100,
           total_evaluations: avg._count.score,
@@ -74,9 +93,9 @@ export async function GET(request: NextRequest) {
       return {
         ...team,
         individual_scores: teamScores.map((score: typeof allScores[0]) => ({
-          judge_id: score.judge_id,
-          judge_name: score.judge.name,
-          judge_email: score.judge.email,
+          judge_id: score.judgeId,
+          judge_name: score.judge.user.name,
+          judge_email: score.judge.user.email,
           score: score.score,
           created_at: score.createdAt,
         })),
@@ -92,8 +111,8 @@ export async function GET(request: NextRequest) {
       team_averages: teamsWithAverages,
       detailed_results: detailedResults,
       all_individual_scores: allScores.map((score: typeof allScores[0]) => ({
-        team_number: score.team.team_number,
-        judge_name: score.judge.name,
+        team_number: score.team.teamNumber,
+        judge_name: score.judge.user.name,
         score: score.score,
         created_at: score.createdAt,
       })),

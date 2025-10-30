@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Get average scores for each team
     const results = await prisma.score.groupBy({
-      by: ["team_id"],
+      by: ["teamId"],
       _avg: {
         score: true,
       },
@@ -29,14 +29,14 @@ export async function GET(request: NextRequest) {
 
     // Get team details and combine with scores
     const teamsWithScores = await Promise.all(
-      results.map(async (result) => {
+      results.map(async (result: any) => {
         const team = await prisma.team.findUnique({
-          where: { id: result.team_id },
+          where: { id: result.teamId },
         })
 
         return {
-          team_id: result.team_id,
-          team_number: team?.team_number,
+          team_id: result.teamId,
+          team_number: team?.teamNumber,
           average_score: result._avg.score,
           total_evaluations: result._count.score,
         }

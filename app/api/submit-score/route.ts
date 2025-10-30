@@ -30,22 +30,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    const { team_id, score } = validation.data
+    const { team_id, score, criterion_id, hackathon_id } = validation.data
 
     // Upsert score (update if exists, create if not)
     const savedScore = await prisma.score.upsert({
       where: {
-        judge_id_team_id: {
-          judge_id: payload.userId,
-          team_id: team_id,
+        judgeId_teamId_criterionId_hackathonId: {
+          judgeId: payload.userId,
+          teamId: team_id,
+          criterionId: criterion_id,
+          hackathonId: hackathon_id,
         },
       },
       update: {
         score: score,
       },
       create: {
-        judge_id: payload.userId,
-        team_id: team_id,
+        judgeId: payload.userId,
+        teamId: team_id,
+        criterionId: criterion_id,
+        hackathonId: hackathon_id,
         score: score,
       },
     })

@@ -1,0 +1,1217 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// MULTI-TENANCY & SAAS MODELS
+// ========================================
+
+// Organization model - Multi-tenancy core entity
+model Organization {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  logo              String?
+  primaryColor      String   @default("#01645e")
+  secondaryColor    String   @default("#3ab666")
+  accentColor       String   @default("#c3e956")
+  domain            String?  @unique // Custom domain
+  plan              Plan     @default(free)
+  status            OrgStatus @default(active)
+  
+  // Plan Limits
+  maxHackathons     Int      @default(1)
+  maxUsers          Int      @default(10)
+  maxParticipants   Int      @default(50)
+  maxStorage        BigInt   @default(1073741824) // 1GB in bytes
+  maxEmailsPerMonth Int      @default(100)
+  
+  // Billing Information
+  billingEmail      String?
+  billingName       String?
+  billingAddress    String?
+  taxId             String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  users             OrganizationUser[]
+  hackathons        Hackathon[]
+  subscription      Subscription?
+  usageMetrics      UsageMetrics[]
+  customDomains     CustomDomain[]
+  apiKeys           ApiKey[]
+  auditLogs         AuditLog[]
+  
+  @@map("organizations")
+}
+
+enum Plan {
+  free
+  starter
+  professional
+  enterprise
+}
+
+enum OrgStatus {
+  active
+  suspended
+  cancelled
+  trial
+}
+
+// OrganizationUser - Many-to-Many relationship between Users and Organizations
+model OrganizationUser {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrgRole  @default(member)
+  isOwner        Boolean  @default(false)
+  permissions    Json?    // Custom permissions
+  joinedAt       DateTime @default(now())
+  
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, organizationId])
+  @@map("organization_users")
+}
+
+enum OrgRole {
+  owner
+  admin
+  member
+  viewer
+}
+
+// Subscription model - Stripe integration
+model Subscription {
+  id                   String   @id @default(cuid())
+  organizationId       String   @unique
+  
+  // Stripe IDs
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  
+  // Subscription details
+  plan                 Plan
+  status               SubscriptionStatus
+  billingInterval      BillingInterval @default(monthly)
+  
+  // Period
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  canceledAt           DateTime?
+  
+  // Trial
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  
+  // Metadata
+  metadata             Json?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
+  
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+}
+
+enum BillingInterval {
+  monthly
+  yearly
+}
+
+// Invoice model
+model Invoice {
+  id              String   @id @default(cuid())
+  subscriptionId  String
+  stripeInvoiceId String?  @unique
+  
+  amount          Int      // in cents
+  currency        String   @default("usd")
+  status          String
+  pdfUrl          String?
+  hostedUrl       String?
+  
+  createdAt       DateTime @default(now())
+  
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@map("invoices")
+}
+
+// UsageMetrics model - Track organization usage
+model UsageMetrics {
+  id             String   @id @default(cuid())
+  organizationId String
+  period         DateTime // Start of billing period (first day of month)
+  
+  // Usage Counts
+  hackathonsUsed     Int @default(0)
+  usersUsed          Int @default(0)
+  participantsUsed   Int @default(0)
+  emailsSent         Int @default(0)
+  storageUsed        BigInt @default(0) // in bytes
+  apiCallsMade       Int @default(0)
+  
+  // Detailed tracking (JSON)
+  hackathonsByStatus Json? // {open: 2, closed: 3, draft: 1}
+  emailsByType       Json? // {invitation: 50, certificate: 20}
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([organizationId, period])
+  @@map("usage_metrics")
+}
+
+// CustomDomain model
+model CustomDomain {
+  id               String   @id @default(cuid())
+  organizationId   String
+  domain           String   @unique
+  verified         Boolean  @default(false)
+  verificationCode String   @unique
+  sslStatus        String   @default("pending") // pending, active, failed
+  createdAt        DateTime @default(now())
+  verifiedAt       DateTime?
+  
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("custom_domains")
+}
+
+// ApiKey model - For developer API access
+model ApiKey {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  key            String   @unique
+  secret         String
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  permissions    Json     // ['read:hackathons', 'write:participants', ...]
+  
+  createdAt DateTime @default(now())
+  
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
+}
+
+// AuditLog model - Track all important actions
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String   // 'hackathon.created', 'user.deleted', etc
+  resource       String   // 'hackathon', 'user', etc
+  resourceId     String?
+  changes        Json?    // Before/after changes
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("audit_logs")
+}
+
+// ========================================
+// CORE MODELS (UPDATED WITH MULTI-TENANCY)
+// ========================================
+
+// Hackathon model - Core entity for managing multiple hackathons
+model Hackathon {
+  id                   String          @id @default(cuid())
+  organizationId       String          // MULTI-TENANCY: Link to organization
+  title                String
+  description          String?
+  requirements         Json? // Array of requirements
+  categories           Json? // Array of categories
+  startDate            DateTime
+  endDate              DateTime
+  registrationDeadline DateTime
+  maxParticipants      Int?
+  status               HackathonStatus @default(draft)
+  prizes               Json? // {first: "", second: "", third: ""}
+  settings             Json? // Store hackathon-specific settings
+  certificateTemplate  String? // Path to custom certificate template image
+  isPinned             Boolean         @default(false) // للعرض في الصفحة الرئيسية
+  evaluationOpen       Boolean         @default(false) // هل التقييم مفتوح للمحكمين
+  judgeSettings        Json? // إعدادات المحكم (ما يراه/لا يراه)
+  emailTemplates       Json? // قوالب الإيميلات المخصصة
+  customFields         Json? // الحقول المخصصة لنموذج التسجيل
+
+  // Additional fields from new database
+  location          String?
+  venue             String?
+  contactEmail      String?
+  contactPhone      String?
+  website           String?
+  socialMedia       String?
+  sponsors          String?
+  partners          String?
+  mentors           String?
+  schedule          String?
+  rules             String?
+  resources         String?
+  faq               String?
+  registrationCount Int     @default(0)
+  maxTeams          Int     @default(0)
+  currentPhase      String?
+  isPublished       Boolean @default(false)
+  featuredImage     String?
+  bannerImage       String?
+  logoImage         String?
+
+  createdBy String // Admin user ID who created this hackathon
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  organization       Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  participants       Participant[]
+  teams              Team[]
+  judges             Judge[]
+  experts            Expert[]               @relation("ExpertToHackathon")
+  scores             Score[]
+  admins             Admin[]
+  supervisors        Supervisor[]
+  evaluationCriteria EvaluationCriterion[]
+  registrationForm   HackathonForm?
+  landingPage        HackathonLandingPage?
+  formDesign         HackathonFormDesign?
+  feedbackForm       HackathonFeedbackForm?
+  feedbacks          HackathonFeedback[]
+  uploadTokens       UploadToken[]
+
+  @@map("hackathons")
+}
+
+enum HackathonStatus {
+  draft
+  open
+  closed
+  completed
+}
+
+// User model - Base user entity
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  password       String?
+  phone          String?
+  city           String?
+  nationality    String?
+  skills         String? // Technical skills (will be JSON array later)
+  experience     String? // Previous experience
+  preferredRole  String? // Preferred team role
+  role           UserRole  @default(participant)
+  isActive       Boolean   @default(true)
+  emailVerified  Boolean   @default(false)
+  profilePicture String?
+  bio            String?
+  github         String?
+  linkedin       String?
+  portfolio      String?
+  university     String?
+  major          String?
+  graduationYear String?
+  workExperience String?
+  lastLogin      DateTime?
+  loginCount     Int       @default(0)
+  isOnline       Boolean   @default(false)
+  lastActivity   DateTime?
+
+  // New fields for supervisor profile
+  dateOfBirth       String?
+  gender            String?
+  education         String?
+  currentJob        String?
+  company           String?
+  yearsOfExperience String?
+  website           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  organizations         OrganizationUser[] // MULTI-TENANCY: User can belong to multiple organizations
+  participations        Participant[]
+  judgeAssignments      Judge[]
+  adminActions          Admin[]
+  supervisorAssignments Supervisor[]
+  expertAssignments     Expert[]      @relation("ExpertToUser")
+  blogPosts             BlogPost[]    // Blog posts authored by this user
+
+  @@map("users")
+}
+
+enum UserRole {
+  participant
+  judge
+  expert
+  admin
+  supervisor
+  master // Super Admin - manages the entire platform
+}
+
+// Participant model - Links users to hackathons as participants
+model Participant {
+  id                 String            @id @default(cuid())
+  userId             String
+  hackathonId        String
+  teamName           String? // اسم الفريق المقترح
+  projectTitle       String? // عنوان المشروع
+  projectDescription String? // وصف المشروع
+  githubRepo         String? // رابط المستودع
+  teamType           TeamType          @default(individual)
+  teamRole           String? // قائد، مصمم، مبرمج، إلخ
+  status             ParticipantStatus @default(pending)
+  score              Float? // النتيجة النهائية
+  feedback           String? // ملاحظات المحكمين
+  registeredAt       DateTime          @default(now())
+  approvedAt         DateTime?
+  rejectedAt         DateTime?
+  updatedAt          DateTime          @updatedAt
+  additionalInfo     Json? // معلومات إضافية (نوع التسجيل، الخبرة، إلخ)
+
+  // Additional fields from new database
+  skills                String?
+  experience            String?
+  motivation            String?
+  availability          String?
+  previousParticipation String?
+  emergencyContact      String?
+  dietaryRestrictions   String?
+  tshirtSize            String?
+  github                String?
+  linkedin              String?
+  portfolio             String?
+  university            String?
+  major                 String?
+  graduationYear        String?
+  workExperience        String?
+  preferredRole         String?
+  teamPreference        String?
+  additionalNotes       String?
+  createdAt             DateTime @default(now())
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hackathon    Hackathon     @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  team         Team?         @relation(fields: [teamId], references: [id])
+  teamId       String?
+  uploadTokens UploadToken[]
+
+  @@unique([userId, hackathonId])
+  @@map("participants")
+}
+
+enum TeamType {
+  individual
+  team
+}
+
+enum ParticipantStatus {
+  pending
+  approved
+  rejected
+}
+
+// Judge model - Links users to hackathons as judges
+model Judge {
+  id                String    @id @default(cuid())
+  userId            String
+  hackathonId       String
+  isActive          Boolean   @default(true)
+  assignedAt        DateTime  @default(now())
+  certificateUrl    String? // URL to certificate file
+  certificateSent   Boolean   @default(false)
+  certificateSentAt DateTime?
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hackathon Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  scores    Score[]
+
+  @@unique([userId, hackathonId])
+  @@map("judges")
+}
+
+// Admin model - Links users to hackathons as admins
+model Admin {
+  id          String    @id @default(cuid())
+  userId      String
+  hackathonId String? // null means super admin
+  permissions Json? // Store admin permissions
+  role        String? // Admin role
+  isActive    Boolean   @default(true)
+  lastLogin   DateTime?
+  assignedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hackathon Hackathon? @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hackathonId])
+  @@map("admins")
+}
+
+// Supervisor model - Links users to hackathons as supervisors
+model Supervisor {
+  id                String    @id @default(cuid())
+  userId            String
+  hackathonId       String? // null means general supervisor
+  permissions       Json? // Store supervisor permissions
+  department        String? // Department or area of responsibility
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  assignedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  certificateUrl    String? // URL to certificate file
+  certificateSent   Boolean   @default(false)
+  certificateSentAt DateTime?
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hackathon Hackathon? @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hackathonId])
+  @@map("supervisors")
+}
+
+model Team {
+  id                 String   @id @default(cuid())
+  name               String
+  hackathonId        String
+  teamNumber         Int?
+  leaderId           String? // Team leader participant ID
+  members            String? // JSON string of team members
+  ideaFile           String? // Path to uploaded PowerPoint file
+  ideaTitle          String?
+  ideaDescription    String?
+  projectName        String?
+  projectDescription String?
+  projectUrl         String?
+  status             String?
+  submissionUrl      String?
+  presentationUrl    String?
+  demoUrl            String?
+  githubUrl          String?
+  finalScore         Float?
+  rank               Int?
+  isQualified        Boolean  @default(false)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  hackathon    Hackathon     @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  participants Participant[]
+  scores       Score[]
+  uploadTokens UploadToken[]
+
+  @@unique([hackathonId, teamNumber])
+  @@map("teams")
+}
+
+model Score {
+  id          String   @id @default(cuid())
+  judgeId     String
+  teamId      String
+  hackathonId String
+  criterionId String
+  score       Int // Score given (1-5 for star rating)
+  maxScore    Int      @default(5)
+  comments    String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  judge     Judge               @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  team      Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  hackathon Hackathon           @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  criterion EvaluationCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+
+  // Ensure one score per judge per team per criterion per hackathon
+  @@unique([judgeId, teamId, criterionId, hackathonId])
+  @@map("scores")
+}
+
+model EvaluationCriterion {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  maxScore    Int      @default(10)
+  hackathonId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  hackathon Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  scores    Score[]
+
+  @@map("evaluation_criteria")
+}
+
+model ResultsSnapshot {
+  id        String   @id @default(cuid())
+  name      String?
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@map("results_snapshots")
+}
+
+// Forms Management System
+model Form {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  fields      Json // Array of form fields with their configurations
+  status      FormStatus @default(draft)
+  isPublic    Boolean    @default(false)
+  createdBy   String // Admin user ID
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  responses FormResponse[]
+
+  @@map("forms")
+}
+
+enum FormStatus {
+  draft
+  published
+  closed
+}
+
+model FormResponse {
+  id          String   @id @default(cuid())
+  formId      String
+  userId      String? // Optional - for logged in users
+  userEmail   String? // For anonymous responses
+  userName    String? // For anonymous responses
+  responses   Json // User's responses to form fields
+  submittedAt DateTime @default(now())
+
+  // Relations
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@map("form_responses")
+}
+
+// Global Settings for system-wide configurations
+model GlobalSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("global_settings")
+}
+
+// Dynamic Registration Forms for Hackathons
+model HackathonForm {
+  id          String  @id @default(cuid())
+  hackathonId String  @unique
+  title       String
+  description String?
+  coverImage  String? // Cover image URL from Cloudinary
+  colors      Json? // Custom colors: {primary, secondary, accent, buttonText}
+  isActive    Boolean @default(true)
+  fields      String // JSON string of form fields (includes idNumber type)
+  settings    String // JSON string of form settings
+
+  // Form Scheduling - توقيت فتح وإغلاق الفورم
+  openAt  DateTime? // تاريخ ووقت فتح الفورم
+  closeAt DateTime? // تاريخ ووقت إغلاق الفورم
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  hackathon Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@map("hackathon_forms")
+}
+
+// HackathonLandingPage model - Custom landing pages for hackathons
+model HackathonLandingPage {
+  id             String   @id @default(cuid())
+  hackathonId    String   @unique
+  isEnabled      Boolean  @default(false)
+  customDomain   String? // Optional custom domain
+  htmlContent    String
+  cssContent     String
+  jsContent      String
+  seoTitle       String?
+  seoDescription String?
+  template       String? // Template name used
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  hackathon Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@map("hackathon_landing_pages")
+}
+
+// HackathonFormDesign model - Custom form designs for hackathons
+model HackathonFormDesign {
+  id          String   @id @default(cuid())
+  hackathonId String   @unique
+  isEnabled   Boolean  @default(false)
+  template    String   @default("modern")
+  htmlContent String?
+  cssContent  String?
+  jsContent   String?
+  settings    Json? // Form design settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  hackathon Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@map("hackathon_form_designs")
+}
+
+// JudgeInvitation model - Invitations for judges to register
+model JudgeInvitation {
+  id          String           @id @default(cuid())
+  email       String
+  name        String?
+  hackathonId String
+  token       String           @unique
+  status      InvitationStatus @default(pending)
+  invitedBy   String // Admin user ID
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("judge_invitations")
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+  cancelled
+}
+
+// JudgeApplication model - Judge applications submitted via form
+model JudgeApplication {
+  id           String  @id @default(cuid())
+  hackathonId  String
+  name         String
+  email        String
+  phone        String?
+  bio          String?
+  expertise    String? // Areas of expertise / المؤهل العلمي
+  experience   String? // Years of experience or description / المشاركات السابقة
+  linkedin     String?
+  twitter      String?
+  website      String?
+  profileImage String? // URL to uploaded image (Cloudinary)
+
+  // ✅ حقول جديدة - nullable لحماية البيانات الموجودة
+  nationalId         String? // رقم الهوية
+  workplace          String? // جهة العمل
+  education          String? // المؤهل العلمي (مكرر من expertise للمرونة)
+  previousHackathons String? // هل شارك في هاكاثونات سابقة (مكرر من experience للمرونة)
+
+  status          ApplicationStatus @default(pending)
+  reviewedBy      String? // Admin user ID who reviewed
+  reviewNotes     String? // Admin notes
+  rejectionReason String? // Reason if rejected
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  reviewedAt      DateTime?
+
+  @@map("judge_applications")
+}
+
+// ========================================
+// EXPERT MODELS - نماذج الخبراء
+// ========================================
+
+// Expert model - Links users to hackathons as experts
+model Expert {
+  id                String    @id @default(cuid())
+  userId            String
+  hackathonId       String
+  isActive          Boolean   @default(true)
+  assignedAt        DateTime  @default(now())
+  certificateUrl    String? // URL to certificate file
+  certificateSent   Boolean   @default(false)
+  certificateSentAt DateTime?
+
+  // Relations
+  user      User      @relation("ExpertToUser", fields: [userId], references: [id], onDelete: Cascade)
+  hackathon Hackathon @relation("ExpertToHackathon", fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hackathonId])
+  @@map("experts")
+}
+
+// ExpertInvitation model - Invitations for experts to register
+model ExpertInvitation {
+  id          String           @id @default(cuid())
+  email       String
+  name        String?
+  hackathonId String
+  token       String           @unique
+  status      InvitationStatus @default(pending)
+  invitedBy   String // Admin user ID
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("expert_invitations")
+}
+
+// ExpertApplication model - Expert applications submitted via form
+model ExpertApplication {
+  id           String  @id @default(cuid())
+  hackathonId  String
+  name         String
+  email        String
+  phone        String?
+  bio          String?
+  expertise    String? // Areas of expertise / المؤهل العلمي
+  experience   String? // Years of experience or description / المشاركات السابقة
+  linkedin     String?
+  twitter      String?
+  website      String?
+  profileImage String? // URL to uploaded image (Cloudinary)
+
+  // حقول إضافية
+  nationalId         String? // رقم الهوية
+  workplace          String? // جهة العمل
+  education          String? // المؤهل العلمي
+  previousHackathons String? // هل شارك في هاكاثونات سابقة
+
+  status          ApplicationStatus @default(pending)
+  reviewedBy      String? // Admin user ID who reviewed
+  reviewNotes     String? // Admin notes
+  rejectionReason String? // Reason if rejected
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  reviewedAt      DateTime?
+
+  @@map("expert_applications")
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+}
+
+// JudgeFormDesign model - Custom design for judge application forms
+model JudgeFormDesign {
+  id              String   @id @default(cuid())
+  hackathonId     String   @unique
+  isEnabled       Boolean  @default(true)
+  coverImage      String? // Cover image URL
+  primaryColor    String   @default("#01645e")
+  secondaryColor  String   @default("#3ab666")
+  accentColor     String   @default("#c3e956")
+  backgroundColor String   @default("#ffffff")
+  title           String? // Custom form title
+  description     String? // Custom form description
+  welcomeMessage  String? // Welcome message
+  successMessage  String? // Success message after submission
+  logoUrl         String? // Logo URL
+  customCss       String? // Custom CSS
+  settings        String? // JSON settings
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("judge_form_designs")
+}
+
+// ExpertFormDesign model - Custom design for expert application forms
+model ExpertFormDesign {
+  id              String   @id @default(cuid())
+  hackathonId     String   @unique
+  isEnabled       Boolean  @default(true)
+  coverImage      String? // Cover image URL
+  primaryColor    String   @default("#0891b2") // cyan-600
+  secondaryColor  String   @default("#3b82f6") // blue-500
+  accentColor     String   @default("#06b6d4") // cyan-500
+  backgroundColor String   @default("#ffffff")
+  title           String? // Custom form title
+  description     String? // Custom form description
+  welcomeMessage  String? // Welcome message
+  successMessage  String? // Success message after submission
+  logoUrl         String? // Logo URL
+  customCss       String? // Custom CSS
+  settings        String? // JSON settings
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("expert_form_designs")
+}
+
+// Hackathon Feedback Form Design - تصميم فورم تقييم الهاكاثون
+model HackathonFeedbackForm {
+  id              String   @id @default(cuid())
+  hackathonId     String   @unique
+  isEnabled       Boolean  @default(true)
+  title           String   @default("قيّم تجربتك في الهاكاثون")
+  description     String?
+  welcomeMessage  String?
+  thankYouMessage String?
+  ratingScale     Int      @default(5) // 1-3, 1-5, 1-10
+  coverImage      String? // Base64 or URL
+  primaryColor    String   @default("#01645e")
+  secondaryColor  String   @default("#3ab666")
+  accentColor     String   @default("#c3e956")
+  backgroundColor String   @default("#ffffff")
+  logoUrl         String?
+  customCss       String?
+  questions       String // JSON array of questions
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  hackathon Hackathon           @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  feedbacks HackathonFeedback[]
+
+  @@map("hackathon_feedback_forms")
+}
+
+// Hackathon Feedback - تقييمات المشاركين للهاكاثون
+model HackathonFeedback {
+  id               String   @id @default(cuid())
+  hackathonId      String
+  formId           String
+  participantEmail String
+  participantName  String
+  overallRating    Int // التقييم العام
+  responses        String // JSON object of question responses
+  suggestions      String? // اقتراحات إضافية
+  createdAt        DateTime @default(now())
+
+  // Relations
+  hackathon Hackathon             @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  form      HackathonFeedbackForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([hackathonId, participantEmail])
+  @@map("hackathon_feedbacks")
+}
+
+// Admin Application - طلبات المشرفين للانضمام
+model AdminApplication {
+  id              String            @id @default(cuid())
+  hackathonId     String
+  name            String
+  email           String
+  phone           String?
+  bio             String?
+  experience      String? // سنوات الخبرة أو وصف الخبرة
+  expertise       String? // مجالات الخبرة
+  linkedin        String?
+  twitter         String?
+  website         String?
+  profileImage    String? // URL للصورة المرفوعة
+  coverImage      String? // صورة الغلاف للفورم
+  motivation      String? // سبب الرغبة في الانضمام
+  availability    String? // مدى التفرغ
+  previousWork    String? // أعمال سابقة
+  status          ApplicationStatus @default(pending)
+  reviewedBy      String? // Admin user ID who reviewed
+  reviewNotes     String? // ملاحظات المراجع
+  rejectionReason String? // سبب الرفض إن وجد
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  reviewedAt      DateTime?
+
+  @@map("admin_applications")
+}
+
+// Admin Form Design - تصميم فورم طلبات المشرفين
+model AdminFormDesign {
+  id              String   @id @default(cuid())
+  hackathonId     String   @unique
+  isEnabled       Boolean  @default(true)
+  coverImage      String? // صورة الغلاف
+  primaryColor    String   @default("#01645e")
+  secondaryColor  String   @default("#3ab666")
+  accentColor     String   @default("#c3e956")
+  backgroundColor String   @default("#ffffff")
+  title           String? // عنوان الفورم المخصص
+  description     String? // وصف الفورم المخصص
+  welcomeMessage  String? // رسالة الترحيب
+  successMessage  String? // رسالة النجاح بعد الإرسال
+  logoUrl         String? // رابط الشعار
+  customCss       String? // CSS مخصص
+  settings        String? // إعدادات JSON
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("admin_form_designs")
+}
+
+// Supervision Form Design - تصميم فورم الإشراف (فئة جديدة)
+model SupervisionFormDesign {
+  id              String   @id @default(cuid())
+  hackathonId     String   @unique
+  isEnabled       Boolean  @default(true)
+  coverImage      String? // صورة الغلاف (Cloudinary)
+  primaryColor    String   @default("#01645e")
+  secondaryColor  String   @default("#3ab666")
+  accentColor     String   @default("#c3e956")
+  backgroundColor String   @default("#ffffff")
+  title           String? // عنوان الفورم المخصص
+  description     String? // وصف الفورم المخصص
+  welcomeMessage  String? // رسالة الترحيب
+  successMessage  String? // رسالة النجاح بعد الإرسال
+  logoUrl         String? // رابط الشعار
+  customCss       String? // CSS مخصص
+  formFields      String? // JSON للحقول الديناميكية
+  settings        String? // إعدادات JSON إضافية
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("supervision_form_designs")
+}
+
+// Supervision Form Submission - الطلبات المقدمة لفورم الإشراف
+model SupervisionFormSubmission {
+  id              String            @id @default(cuid())
+  hackathonId     String
+  formId          String
+  name            String
+  email           String
+  phone           String?
+  formData        String // JSON للبيانات المقدمة
+  attachments     String? // JSON لروابط المرفقات (Cloudinary)
+  status          ApplicationStatus @default(pending)
+  reviewedBy      String? // Admin user ID who reviewed
+  reviewNotes     String? // ملاحظات المراجع
+  rejectionReason String? // سبب الرفض
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  reviewedAt      DateTime?
+
+  @@map("supervision_form_submissions")
+}
+
+// Supervisor Invitation - دعوات المشرفين الآمنة
+model SupervisorInvitation {
+  id          String           @id @default(cuid())
+  email       String
+  name        String?
+  hackathonId String? // null = general supervisor
+  token       String           @unique
+  status      InvitationStatus @default(pending)
+  invitedBy   String // Admin user ID
+  permissions Json? // Supervisor permissions
+  department  String? // Department assignment
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("supervisor_invitations")
+}
+
+// Email Templates - قوالب الإيميلات القابلة للتعديل
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  templateKey  String   @unique // registration_confirmation, acceptance, team_assignment, etc.
+  nameAr       String // الاسم بالعربي
+  nameEn       String // الاسم بالانجليزي
+  subject      String // عنوان الإيميل
+  bodyHtml     String   @db.Text // محتوى HTML
+  bodyText     String?  @db.Text // محتوى نصي (اختياري)
+  category     String // participant, judge, supervisor, team, general
+  variables    Json? // المتغيرات المتاحة {name: description}
+  attachments  String?  @db.Text // الملفات المرفقة (JSON string)
+  isActive     Boolean  @default(true)
+  isSystem     Boolean  @default(false) // هل القالب أساسي (لا يمكن حذفه)
+  description  String? // وصف القالب
+  lastEditedBy String? // Admin ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+// Upload Token - للسماح للمشاركين برفع العروض التقديمية عبر رابط سحري
+model UploadToken {
+  id            String    @id @default(cuid())
+  token         String    @unique
+  participantId String
+  teamId        String
+  hackathonId   String
+  expiresAt     DateTime
+  used          Boolean   @default(false)
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  hackathon   Hackathon   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([participantId])
+  @@index([teamId])
+  @@map("upload_tokens")
+}
+
+// ========================================
+// BLOG SYSTEM
+// ========================================
+
+model BlogPost {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  titleAr       String
+  titleEn       String
+  excerptAr     String      @db.Text
+  excerptEn     String      @db.Text
+  contentAr     String      @db.Text
+  contentEn     String      @db.Text
+  coverImage    String?
+  authorId      String
+  categoryId    String
+  status        PostStatus  @default(draft)
+  featured      Boolean     @default(false)
+  views         Int         @default(0)
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  author        User        @relation(fields: [authorId], references: [id])
+  category      BlogCategory @relation(fields: [categoryId], references: [id])
+  tags          BlogPostTag[]
+  comments      BlogComment[]
+
+  @@index([slug])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([publishedAt])
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  nameAr        String
+  nameEn        String
+  descriptionAr String?
+  descriptionEn String?
+  icon          String?
+  color         String      @default("#6366f1")
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  posts         BlogPost[]
+
+  @@index([slug])
+  @@map("blog_categories")
+}
+
+model BlogTag {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  nameAr        String
+  nameEn        String
+  createdAt     DateTime    @default(now())
+
+  // Relations
+  posts         BlogPostTag[]
+
+  @@index([slug])
+  @@map("blog_tags")
+}
+
+model BlogPostTag {
+  id            String      @id @default(cuid())
+  postId        String
+  tagId         String
+  createdAt     DateTime    @default(now())
+
+  // Relations
+  post          BlogPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag           BlogTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tagId])
+  @@index([postId])
+  @@index([tagId])
+  @@map("blog_post_tags")
+}
+
+model BlogComment {
+  id            String      @id @default(cuid())
+  postId        String
+  authorName    String
+  authorEmail   String
+  content       String      @db.Text
+  status        CommentStatus @default(pending)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  post          BlogPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([status])
+  @@map("blog_comments")
+}
+
+enum PostStatus {
+  draft
+  published
+  archived
+}
+
+enum CommentStatus {
+  pending
+  approved
+  rejected
+  spam
+}
+

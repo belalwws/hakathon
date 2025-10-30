@@ -1,303 +1,347 @@
-"use client"
+'use client'
 
-import React, { useEffect, useMemo, useState } from "react"
-import { motion } from "framer-motion"
-import { Database, Save, RotateCcw, Users as UsersIcon, FileText, Download, Share2 } from "lucide-react"
-import ResetScoresButton from "@/components/ResetScoresButton"
+import { useEffect, useState } from 'react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useLanguage } from '@/contexts/language-context'
+import { motion } from 'framer-motion'
+import { 
+  Trophy, Users, Calendar, Settings, Bell, Search, Menu,
+  BarChart3, Shield, Building2, Plus, TrendingUp, UserPlus,
+  Clock, CheckCircle2, XCircle, Gavel, Eye
+} from 'lucide-react'
+import { 
+  BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts'
 
-interface TeamAverage {
-  team_id: string
-  team_number: number
-  average_score: number
-  total_evaluations: number
+interface OrganizationStats {
+  totalHackathons: number
+  activeHackathons: number
+  totalParticipants: number
+  pendingParticipants: number
+  approvedParticipants: number
+  rejectedParticipants: number
+  totalUsers: number
+  totalTeams: number
+  totalJudges: number
+  recentHackathons: any[]
 }
-
-interface DetailedTeam {
-  team_id: string
-  team_number: number
-  average_score: number
-  total_evaluations: number
-  individual_scores: Array<{
-    judge_id: string
-    judge_name: string
-    judge_email: string
-    score: number
-    created_at: string
-  }>
-}
-
-interface SnapshotMeta { id: string; name: string | null; createdAt: string }
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const { language } = useLanguage()
+  const [stats, setStats] = useState<OrganizationStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [teamAverages, setTeamAverages] = useState<TeamAverage[]>([])
-  const [detailedResults, setDetailedResults] = useState<DetailedTeam[]>([])
-  const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([])
-  const [savingSnapshot, setSavingSnapshot] = useState(false)
-  const [currentSnapshotName, setCurrentSnapshotName] = useState<string | null>(null)
-
-  const [judges, setJudges] = useState<{ id: string; name: string; email: string; is_active: boolean }[]>([])
-  const [loadingJudges, setLoadingJudges] = useState(false)
 
   useEffect(() => {
-    loadLiveResults()
-    loadSnapshots()
-    loadJudges()
-  }, [])
-
-  const loadLiveResults = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch("/api/admin/results", { cache: "no-store" })
-      if (!res.ok) throw new Error("فشل في جلب النتائج")
-      const data = await res.json()
-      setTeamAverages((data.team_averages || []).sort((a: TeamAverage, b: TeamAverage) => (b.average_score || 0) - (a.average_score || 0)))
-      setDetailedResults(data.detailed_results || [])
-      setCurrentSnapshotName(null)
-    } catch (e: any) {
-      setError(e?.message || "حدث خطأ")
-    } finally {
-      setLoading(false)
+    if (user?.role !== 'admin') {
+      router.push('/login')
+      return
     }
-  }
+    fetchData()
+  }, [user])
 
-  const loadSnapshots = async () => {
+  const fetchData = async () => {
     try {
-      const res = await fetch("/api/admin/snapshots", { cache: "no-store" })
-      if (!res.ok) return
-      const data = await res.json()
-      setSnapshots(data.snapshots || [])
-    } catch {}
-  }
-
-  const saveSnapshot = async () => {
-    const name = prompt("اسم اللقطة (اختياري):") || null
-    setSavingSnapshot(true)
-    try {
-      const res = await fetch("/api/admin/snapshots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      await loadSnapshots()
-      // عرض اللقطة مباشرة لإظهار نتيجة فورية
-      if (data?.snapshot?.id) {
-        await viewSnapshot(data.snapshot.id)
+      const response = await fetch('/api/admin/dashboard')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
       }
-      alert("تم حفظ اللقطة بنجاح")
-    } catch {
-      alert("فشل حفظ اللقطة")
-    } finally {
-      setSavingSnapshot(false)
-    }
-  }
-
-  const viewSnapshot = async (id: string) => {
-    try {
-      setLoading(true)
-      const res = await fetch(`/api/admin/snapshots/${id}`, { cache: "no-store" })
-      if (!res.ok) throw new Error("لقطة غير متاحة")
-      const data = await res.json()
-      const snap = data.snapshot as { name: string | null; data: { team_averages: TeamAverage[]; detailed_results: DetailedTeam[] } }
-      setTeamAverages((snap.data.team_averages || []).sort((a: TeamAverage, b: TeamAverage) => (b.average_score || 0) - (a.average_score || 0)))
-      setDetailedResults(snap.data.detailed_results || [])
-      setCurrentSnapshotName(snap.name || id)
-    } catch (e: any) {
-      setError(e?.message || "حدث خطأ")
+    } catch (error) {
+      console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const loadJudges = async () => {
-    try {
-      setLoadingJudges(true)
-      const res = await fetch("/api/admin/judges", { cache: "no-store" })
-      if (!res.ok) return
-      const data = await res.json()
-      setJudges(data.judges || [])
-    } catch {}
-    finally { setLoadingJudges(false) }
-  }
+  const COLORS = ['#4f46e5', '#06b6d4', '#f59e0b', '#10b981', '#ef4444']
 
-  const toggleJudge = async (id: string, next: boolean) => {
-    try {
-      const res = await fetch(`/api/admin/judges/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_active: next }) })
-      if (!res.ok) throw new Error()
-      setJudges((prev) => prev.map((j) => (j.id === id ? { ...j, is_active: next } : j)))
-    } catch {
-      alert("تعذر تحديث حالة المحكّم")
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="relative mb-6">
+            <div className="w-24 h-24 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Shield className="h-10 w-10 text-indigo-600 animate-pulse" />
+            </div>
+          </div>
+          <p className="text-xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            {language === 'ar' ? 'جاري التحميل...' : 'Loading Dashboard...'}
+          </p>
+        </motion.div>
+      </div>
+    )
   }
-
-  const exportToCSV = () => {
-    if (!teamAverages.length) return
-    const headers = ["رقم الفريق", "المتوسط", "عدد التقييمات"]
-    const rows = teamAverages.map((t) => [t.team_number, (t.average_score ?? 0).toFixed(2), t.total_evaluations])
-    const csv = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `ranking_${new Date().toISOString().split("T")[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const exportToJSON = () => {
-    const json = JSON.stringify({ exportedAt: new Date().toISOString(), teams: teamAverages, detailed: detailedResults }, null, 2)
-    const blob = new Blob([json], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `ranking_${new Date().toISOString().split("T")[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  if (loading) return <div className="p-6">جاري التحميل...</div>
-  if (error) return <div className="p-6 text-red-600">{error}</div>
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#c3e956]/20 to-[#3ab666]/20 p-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-[#01645e]">لوحة التحكم</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <button onClick={saveSnapshot} disabled={savingSnapshot} className="rounded bg-blue-600 text-white px-3 py-2 hover:bg-blue-700 flex items-center gap-2 disabled:opacity-60"><Save size={18}/> حفظ لقطة</button>
-            <button onClick={loadLiveResults} className="rounded bg-gray-600 text-white px-3 py-2 hover:bg-gray-700 flex items-center gap-2"><RotateCcw size={18}/> تحديث</button>
-            <ResetScoresButton />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950">
+      {/* Top Navigation */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              {language === 'ar' ? 'لوحة تحكم المؤسسة' : 'Organization Dashboard'}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2">
+              <Search className="h-4 w-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder={language === 'ar' ? 'بحث...' : 'Search...'} 
+                className="bg-transparent border-none outline-none text-sm w-64"
+              />
+            </div>
+            
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+            
+            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-white" />
+              </div>
+              <div className="hidden md:block text-sm">
+                <div className="font-semibold">{user?.name}</div>
+                <div className="text-xs text-gray-500">
+                  {language === 'ar' ? 'مدير' : 'Admin'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen">
+          <div className="p-4 space-y-2">
+            <Button 
+              variant="ghost" 
+              className={`w-full justify-start gap-2 bg-indigo-50 dark:bg-indigo-950 text-indigo-600`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              {language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}
+            </Button>
+            <Link href="/admin/hackathons">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+              >
+                <Trophy className="h-4 w-4" />
+                {language === 'ar' ? 'الهاكاثونات' : 'Hackathons'}
+              </Button>
+            </Link>
+            <Link href="/admin/participants">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+              >
+                <Users className="h-4 w-4" />
+                {language === 'ar' ? 'المشاركين' : 'Participants'}
+              </Button>
+            </Link>
+            <Link href="/admin/judges">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+              >
+                <Gavel className="h-4 w-4" />
+                {language === 'ar' ? 'الحكام' : 'Judges'}
+              </Button>
+            </Link>
+            {user?.role === 'master' && (
+              <Link href="/admin/users">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  {language === 'ar' ? 'المستخدمين' : 'Users'}
+                </Button>
+              </Link>
+            )}
+            <Link href="/admin/settings">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                {language === 'ar' ? 'الإعدادات' : 'Settings'}
+              </Button>
+            </Link>
           </div>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border bg-white/70 p-4 mb-6">
-          <h3 className="font-bold text-[#01645e] flex items-center gap-2 mb-3"><Database size={18}/> لقطات النتائج</h3>
-          <div className="text-sm text-[#8b7632] mb-2">
-            {currentSnapshotName ? (
-              <span>تعرض الآن لقطة: <span className="text-[#01645e] font-medium">{currentSnapshotName}</span></span>
-            ) : (
-              <span>تعرض الآن النتائج المباشرة</span>
+        {/* Main Content */}
+        <div className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            {/* Welcome Header */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                {language === 'ar' ? `مرحباً، ${user?.name} 👋` : `Welcome back, ${user?.name} 👋`}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                {language === 'ar' ? 'إليك نظرة عامة على مؤسستك' : 'Here\'s an overview of your organization'}
+              </p>
+            </motion.div>
+
+            {/* Stats Grid */}
+            {stats && (
+              <>
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+                >
+                    <Card className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900 border-indigo-200 dark:border-indigo-800">
+                      <div className="flex items-center justify-between mb-4">
+                        <Trophy className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                        <Badge className="bg-indigo-600">{language === 'ar' ? 'هاكاثونات' : 'Hackathons'}</Badge>
+                      </div>
+                      <div className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">{stats.totalHackathons}</div>
+                      <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
+                        {stats.activeHackathons} {language === 'ar' ? 'نشط' : 'active'}
+                      </p>
+                    </Card>
+
+                    <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
+                      <div className="flex items-center justify-between mb-4">
+                        <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
+                        <Badge className="bg-green-600">{language === 'ar' ? 'مشاركين' : 'Participants'}</Badge>
+                      </div>
+                      <div className="text-3xl font-bold text-green-900 dark:text-green-100">{stats.totalParticipants}</div>
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        {stats.pendingParticipants} {language === 'ar' ? 'معلق' : 'pending'}
+                      </p>
+                    </Card>
+
+                    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800">
+                      <div className="flex items-center justify-between mb-4">
+                        <Gavel className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                        <Badge className="bg-purple-600">{language === 'ar' ? 'حكام' : 'Judges'}</Badge>
+                      </div>
+                      <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">{stats.totalJudges}</div>
+                      <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                        {language === 'ar' ? 'محكّم' : 'total judges'}
+                      </p>
+                    </Card>
+
+                    <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
+                      <div className="flex items-center justify-between mb-4">
+                        <UserPlus className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                        <Badge className="bg-orange-600">{language === 'ar' ? 'مستخدمين' : 'Users'}</Badge>
+                      </div>
+                      <div className="text-3xl font-bold text-orange-900 dark:text-orange-100">{stats.totalUsers}</div>
+                      <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                        {language === 'ar' ? 'في مؤسستك' : 'in your org'}
+                      </p>
+                    </Card>
+                  </motion.div>
+
+                  {/* Participants Status */}
+                  <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+                >
+                  <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Clock className="h-5 w-5 text-yellow-600" />
+                      <h3 className="font-semibold">{language === 'ar' ? 'معلقة' : 'Pending'}</h3>
+                    </div>
+                    <div className="text-2xl font-bold">{stats?.pendingParticipants || 0}</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                      <div className="bg-yellow-600 h-2 rounded-full" style={{ width: `${((stats?.pendingParticipants || 0) / (stats?.totalParticipants || 1)) * 100}%` }}></div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <h3 className="font-semibold">{language === 'ar' ? 'مقبولة' : 'Approved'}</h3>
+                    </div>
+                    <div className="text-2xl font-bold">{stats?.approvedParticipants || 0}</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                      <div className="bg-green-600 h-2 rounded-full" style={{ width: `${((stats?.approvedParticipants || 0) / (stats?.totalParticipants || 1)) * 100}%` }}></div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <XCircle className="h-5 w-5 text-red-600" />
+                      <h3 className="font-semibold">{language === 'ar' ? 'مرفوضة' : 'Rejected'}</h3>
+                    </div>
+                    <div className="text-2xl font-bold">{stats?.rejectedParticipants || 0}</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                      <div className="bg-red-600 h-2 rounded-full" style={{ width: `${((stats?.rejectedParticipants || 0) / (stats?.totalParticipants || 1)) * 100}%` }}></div>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* Quick Actions */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">
+                      {language === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Button 
+                        className="w-full justify-start gap-2 bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => router.push('/admin/hackathons/create')}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {language === 'ar' ? 'إنشاء هاكاثون جديد' : 'Create New Hackathon'}
+                      </Button>
+                      <Button 
+                        className="w-full justify-start gap-2" 
+                        variant="outline"
+                        onClick={() => router.push('/admin/participants')}
+                      >
+                        <Eye className="h-4 w-4" />
+                        {language === 'ar' ? 'عرض المشاركين' : 'View Participants'}
+                      </Button>
+                      <Button 
+                        className="w-full justify-start gap-2" 
+                        variant="outline"
+                        onClick={() => router.push('/admin/judges')}
+                      >
+                        <Gavel className="h-4 w-4" />
+                        {language === 'ar' ? 'إدارة الحكام' : 'Manage Judges'}
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              </>
             )}
           </div>
-          <div className="max-h-64 overflow-y-auto divide-y">
-            {snapshots.length === 0 && <div className="text-sm text-[#8b7632]">لا توجد لقطات محفوظة بعد</div>}
-            {snapshots.map((s) => (
-              <div key={s.id} className="py-2 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{s.name || s.id}</div>
-                  <div className="text-xs text-[#8b7632]">{new Date(s.createdAt).toLocaleString()}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => viewSnapshot(s.id)} className="rounded bg-[#01645e] text-white px-2 py-1 hover:bg-[#014a46]">عرض</button>
-                  <a href={`/api/admin/snapshots/${s.id}`} className="rounded border px-2 py-1" target="_blank" rel="noreferrer">JSON</a>
-                  <button onClick={async () => {
-                    if (!confirm("هل تريد حذف هذه اللقطة؟")) return
-                    const res = await fetch(`/api/admin/snapshots/${s.id}`, { method: "DELETE" })
-                    if (res.ok) {
-                      await loadSnapshots()
-                      // إذا كنا نعرض هذه اللقطة الآن، نعود للوضع المباشر
-                      if (currentSnapshotName && (currentSnapshotName === s.name || currentSnapshotName === s.id)) {
-                        await loadLiveResults()
-                      }
-                    } else {
-                      alert("تعذر حذف اللقطة")
-                    }
-                  }} className="rounded bg-red-600 text-white px-2 py-1 hover:bg-red-700">حذف</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* ترتيب الفرق بالكامل */}
-        {teamAverages.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border bg-white/70 p-4 mb-6">
-            <h3 className="font-bold text-[#01645e] mb-3">ترتيب الفرق ({currentSnapshotName ? "من لقطة محفوظة" : "مباشر"})</h3>
-            <div className="space-y-2">
-              {teamAverages.map((t, index) => (
-                <div key={t.team_id} className="flex items-center justify-between rounded border px-3 py-2 bg-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 text-center font-bold text-[#01645e]">{index + 1}</div>
-                    <div>فريق #{t.team_number} <span className="text-xs text-[#8b7632]">(التقييمات: {t.total_evaluations})</span></div>
-                  </div>
-                  <div className="text-[#01645e] font-semibold">{(t.average_score ?? 0).toFixed(2)}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* تفاصيل التقييمات بالكامل */}
-        {detailedResults.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border bg-white/70 p-4 mb-6">
-            <h3 className="font-bold text-[#01645e] mb-3">تفاصيل التقييمات ({currentSnapshotName ? "من لقطة محفوظة" : "مباشر"})</h3>
-            <div className="space-y-6">
-              {detailedResults.map((team) => (
-                <div key={team.team_id} className="rounded border p-4 bg-white">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h4 className="font-semibold">فريق #{team.team_number} — متوسط: {(team.average_score ?? 0).toFixed(2)}</h4>
-                    <span className="text-sm text-gray-500">عدد التقييمات: {team.total_evaluations}</span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border text-right">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="border px-3 py-2">المحكّم</th>
-                          <th className="border px-3 py-2">الإيميل</th>
-                          <th className="border px-3 py-2">النتيجة</th>
-                          <th className="border px-3 py-2">التاريخ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {team.individual_scores.map((s, idx) => (
-                          <tr key={`${team.team_id}-${idx}`}>
-                            <td className="border px-3 py-2">{s.judge_name}</td>
-                            <td className="border px-3 py-2">{s.judge_email}</td>
-                            <td className="border px-3 py-2">{s.score.toFixed(2)}</td>
-                            <td className="border px-3 py-2">{new Date(s.created_at).toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* إدارة المحكّمين */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border bg-white/70 p-4 mb-6">
-          <h3 className="font-bold text-[#01645e] flex items-center gap-2 mb-3"><UsersIcon size={18}/> إدارة المحكّمين</h3>
-          {loadingJudges ? (
-            <div className="text-sm">جاري التحميل...</div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {judges.map((j) => (
-                <div key={j.id} className="flex items-center justify-between border rounded px-3 py-2 bg-white">
-                  <div>
-                    <div className="font-medium">{j.name}</div>
-                    <div className="text-xs text-[#8b7632]">{j.email}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs ${j.is_active ? "text-green-700" : "text-red-700"}`}>{j.is_active ? "مفعّل" : "معطّل"}</span>
-                    <button onClick={() => toggleJudge(j.id, !j.is_active)} className={`rounded px-3 py-1 ${j.is_active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"} text-white`}>{j.is_active ? "تعطيل" : "تفعيل"}</button>
-                  </div>
-                </div>
-              ))}
-              {judges.length === 0 && <div className="text-sm text-[#8b7632]">لا يوجد محكّمون</div>}
-            </div>
-          )}
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border bg-white/70 p-4">
-          <h3 className="font-bold text-[#01645e] mb-3">تصدير النتائج</h3>
-          <div className="flex items-center gap-3">
-            <button onClick={exportToCSV} className="rounded bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 flex items-center gap-2"><FileText size={18}/> CSV</button>
-            <button onClick={exportToJSON} className="rounded bg-blue-600 text-white px-3 py-2 hover:bg-blue-700 flex items-center gap-2"><Download size={18}/> JSON</button>
-            <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="rounded bg-pink-600 text-white px-3 py-2 hover:bg-pink-700 flex items-center gap-2"><Share2 size={18}/> للأعلى</button>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   )
-} 
+}

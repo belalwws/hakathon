@@ -9,6 +9,8 @@ export const loginSchema = z.object({
 // Score submission validation schema
 export const scoreSchema = z.object({
   team_id: z.string().min(1, "معرف الفريق مطلوب"),
+  criterion_id: z.string().min(1, "معرف المعيار مطلوب"),
+  hackathon_id: z.string().min(1, "معرف الهاكاثون مطلوب"),
   score: z.number().min(0, "النتيجة لا يمكن أن تكون أقل من 0").max(5, "النتيجة لا يمكن أن تكون أكثر من 5"),
 })
 

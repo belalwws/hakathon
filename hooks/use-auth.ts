@@ -6,7 +6,7 @@ interface User {
 	id: string
 	name: string
 	email: string
-	role: "admin" | "judge"
+	role: "admin" | "judge" | "participant"
 }
 
 export function useAuth() {
@@ -19,7 +19,7 @@ export function useAuth() {
 	}, [])
 
 	const login = async (email: string, password: string) => {
-		const response = await fetch("/api/login", {
+		const response = await fetch("/api/auth/login", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ email, password }),
@@ -55,5 +55,6 @@ export function useAuth() {
 		getAuthHeaders,
 		isAdmin: user?.role === "admin",
 		isJudge: user?.role === "judge",
+		isParticipant: user?.role === "participant",
 	}
 } 

@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
 		}
 
 		const scores = await prisma.score.findMany({
-			where: { judge_id: payload.userId },
-			select: { team_id: true },
+			where: { judgeId: payload.userId },
+			select: { teamId: true },
 		})
-		return NextResponse.json({ team_ids: scores.map((s) => s.team_id) })
+		return NextResponse.json({ team_ids: scores.map((s) => s.teamId) })
 	} catch (e) {
 		return NextResponse.json({ error: "حدث خطأ في الخادم" }, { status: 500 })
 	}

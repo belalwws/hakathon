@@ -1,0 +1,40 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  
+  <!-- Header -->
+  <rect x="50" y="50" width="700" height="80" fill="#007bff" rx="10"/>
+  <text x="400" y="100" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="28" font-weight="bold">شهادة مشاركة</text>
+  
+  <!-- Main Content -->
+  <text x="400" y="180" text-anchor="middle" fill="#333" font-family="Arial, sans-serif" font-size="18">هذه شهادة تقدير تُمنح إلى</text>
+  
+  <!-- Name Placeholder -->
+  <rect x="200" y="200" width="400" height="50" fill="none" stroke="#007bff" stroke-width="2" stroke-dasharray="5,5" rx="5"/>
+  <text x="400" y="230" text-anchor="middle" fill="#666" font-family="Arial, sans-serif" font-size="16">[اسم المشارك]</text>
+  
+  <!-- Event Details -->
+  <text x="400" y="300" text-anchor="middle" fill="#333" font-family="Arial, sans-serif" font-size="16">لمشاركته المتميزة في</text>
+  
+  <!-- Event Name Placeholder -->
+  <rect x="150" y="320" width="500" height="40" fill="none" stroke="#28a745" stroke-width="2" stroke-dasharray="5,5" rx="5"/>
+  <text x="400" y="345" text-anchor="middle" fill="#666" font-family="Arial, sans-serif" font-size="14">[اسم الهاكاثون]</text>
+  
+  <!-- Date -->
+  <text x="400" y="400" text-anchor="middle" fill="#333" font-family="Arial, sans-serif" font-size="14">المنعقد في تاريخ: [التاريخ]</text>
+  
+  <!-- Signature Area -->
+  <line x1="150" y1="480" x2="300" y2="480" stroke="#333" stroke-width="1"/>
+  <text x="225" y="500" text-anchor="middle" fill="#666" font-family="Arial, sans-serif" font-size="12">توقيع المنظم</text>
+  
+  <line x1="500" y1="480" x2="650" y2="480" stroke="#333" stroke-width="1"/>
+  <text x="575" y="500" text-anchor="middle" fill="#666" font-family="Arial, sans-serif" font-size="12">ختم المؤسسة</text>
+  
+  <!-- Decorative Elements -->
+  <circle cx="100" cy="150" r="30" fill="none" stroke="#ffc107" stroke-width="3"/>
+  <circle cx="700" cy="150" r="30" fill="none" stroke="#ffc107" stroke-width="3"/>
+  
+  <!-- Border Decoration -->
+  <rect x="20" y="20" width="760" height="560" fill="none" stroke="#007bff" stroke-width="4" rx="15"/>
+  <rect x="30" y="30" width="740" height="540" fill="none" stroke="#28a745" stroke-width="2" rx="10"/>
+</svg>

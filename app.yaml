@@ -1,0 +1,55 @@
+name: hackpro-saas
+services:
+- name: web
+  github:
+    repo: belalwws/hackpro-saas
+    branch: main
+  build_command: npm ci && npm run build:production
+  run_command: npm start
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: DATABASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${db.connection_string}
+  - key: JWT_SECRET
+    scope: RUN_AND_BUILD_TIME
+    value: ${jwt_secret}
+  - key: NEXTAUTH_SECRET
+    scope: RUN_AND_BUILD_TIME
+    value: ${nextauth_secret}
+  - key: NEXTAUTH_URL
+    scope: RUN_AND_BUILD_TIME
+    value: https://${app.domain}
+  - key: NEXT_PUBLIC_BASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: https://${app.domain}
+  - key: NEXT_PUBLIC_APP_URL
+    scope: RUN_AND_BUILD_TIME
+    value: https://${app.domain}
+  - key: GMAIL_USER
+    scope: RUN_AND_BUILD_TIME
+    value: ${gmail_user}
+  - key: GMAIL_PASS
+    scope: RUN_AND_BUILD_TIME
+    value: ${gmail_pass}
+  - key: MAIL_FROM
+    value: "HackPro <noreply@hackpro.com>"
+  - key: CLOUDINARY_CLOUD_NAME
+    scope: RUN_AND_BUILD_TIME
+    value: ${cloudinary_cloud_name}
+  - key: CLOUDINARY_API_KEY
+    scope: RUN_AND_BUILD_TIME
+    value: ${cloudinary_api_key}
+  - key: CLOUDINARY_API_SECRET
+    scope: RUN_AND_BUILD_TIME
+    value: ${cloudinary_api_secret}
+  http_port: 3000
+  health_check:
+    http_path: /api/health
+
+databases:
+- name: db
+  engine: PG
+  version: "14"
+  production: true

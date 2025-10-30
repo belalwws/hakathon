@@ -5,7 +5,9 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
 export function rateLimit(request: NextRequest, limit = 10, windowMs = 60000) {
 	// Disable rate limiting in development for smoother DX
+	console.log('🔍 Rate limit check - NODE_ENV:', process.env.NODE_ENV)
 	if (process.env.NODE_ENV !== "production") {
+		console.log('✅ Rate limiting disabled in development')
 		return { success: true, remaining: limit }
 	}
 	const forwarded = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
@@ -41,4 +43,24 @@ export function rateLimit(request: NextRequest, limit = 10, windowMs = 60000) {
 
 	current.count++
 	return { success: true, remaining: limit - current.count }
-} 
+}
+
+// Function to reset rate limit for a specific IP/path (for debugging)
+export function resetRateLimit(request: NextRequest, path?: string) {
+	const forwarded = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
+	const ip = (forwarded?.split(",")[0]?.trim() || (request as any).ip || "unknown") as string
+	const targetPath = path || request.nextUrl?.pathname || "*"
+	const key = `${ip}:${targetPath}`
+
+	rateLimitMap.delete(key)
+	console.log('🔄 Rate limit reset for:', key)
+	return true
+}
+
+// Function to clear all rate limits (for debugging)
+export function clearAllRateLimits() {
+	const size = rateLimitMap.size
+	rateLimitMap.clear()
+	console.log('🧹 Cleared all rate limits, removed:', size, 'entries')
+	return size
+}

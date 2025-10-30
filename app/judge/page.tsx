@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 export default function JudgeRootRedirect() {
 	const router = useRouter()
 	useEffect(() => {
-		router.replace("/judge/select")
+		router.replace("/judge/evaluation")
 	}, [router])
 	return null
-} 
+}

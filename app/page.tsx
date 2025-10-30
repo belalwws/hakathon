@@ -1,341 +1,740 @@
 "use client"
 
-import type React from "react"
-
-import { motion } from "framer-motion"
-import { Trophy, Users, Target, Lightbulb, Cog, TrendingUp, Presentation, Star, CheckCircle, Play, X, LogIn } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { useTheme } from "@/contexts/theme-context"
+import { useLanguage } from "@/contexts/language-context"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { BackgroundAnimations } from "@/components/background-animations"
+import { FAQSection } from "@/components/faq-section"
+import { TestimonialsSection } from "@/components/testimonials-section"
+import { AnimatedSection } from "@/components/animated-section"
+import { RippleButton } from "@/components/ripple-button"
+import { HoverCard } from "@/components/hover-card"
+import { AnimatedCounter, ParallaxSection, FloatingElement } from "@/components/advanced-animations"
+import { 
+  ArrowLeft,
+  ArrowRight,
+  Rocket, 
+  Users, 
+  Award, 
+  TrendingUp,
+  Zap,
+  Shield,
+  Globe,
+  BarChart3,
+  CheckCircle2,
+  Star,
+  Building2,
+  Clock,
+  Database,
+  Sparkles,
+  Code2,
+  Brain,
+  Target
+} from "lucide-react"
 
-export default function LandingPage() {
-  const [showDemo, setShowDemo] = useState(false)
+export default function HomePage() {
   const router = useRouter()
-  if (showDemo) {
+  const { user, loading } = useAuth()
+  const { theme } = useTheme()
+  const { t, language } = useLanguage()
+
+  console.log('🏠 [HomePage] Rendering - loading:', loading, 'user:', user?.email || 'none', 'role:', user?.role || 'none')
+
+  if (loading) {
+    console.log('⏳ [HomePage] Still loading auth...')
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold text-[#01645e]">شاهد الشرح التوضيحي</h2>
-              <button onClick={() => setShowDemo(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-8">
-              <div className="text-center">
-                <div className="inline-block bg-gradient-to-r from-[#01645e]/10 to-[#3ab666]/10 border border-[#01645e]/20 rounded-full px-6 py-3 mb-6">
-                  <span className="text-[#01645e] font-semibold">📚 دليل الاستخدام</span>
-                </div>
-                <h3 className="text-2xl font-bold text-[#01645e] mb-4">كيفية استخدام نظام التقييم</h3>
-                <p className="text-[#8b7632] text-lg">تعلم كيفية استخدام النظام خطوة بخطوة</p>
-              </div>
-
-              {/* Evaluation Card */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-3d rounded-3xl p-8 border border-[#01645e]/20 mb-8">
-                <div className="text-center mb-6">
-                  <div className="inline-block bg-gradient-to-r from-[#01645e] to-[#3ab666] text-white px-6 py-3 rounded-full mb-4">
-                    <span className="font-bold">🎯 معايير التقييم</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-[#01645e] mb-2">خمسة معايير أساسية للتقييم</h3>
-                  <p className="text-[#8b7632]">سيتم تقييم كل فريق بناءً على هذه المعايير المحددة</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    { name: "الجدوى", weight: "20%", color: "#01645e" },
-                    { name: "ابتكارية الفكرة", weight: "25%", color: "#3ab666" },
-                    { name: "قابلية التطبيق", weight: "25%", color: "#c3e956" },
-                    { name: "التأثير على المؤسسة", weight: "20%", color: "#8b7632" },
-                    { name: "مهارات العرض", weight: "10%", color: "#01645e" },
-                  ].map((criterion, index) => (
-                    <motion.div key={index} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.1 }} className="glass rounded-2xl p-4 border border-white/20 text-center">
-                      <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold" style={{ backgroundColor: criterion.color }}>
-                        {criterion.weight}
-                      </div>
-                      <h4 className="font-bold text-[#01645e] text-sm">{criterion.name}</h4>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Steps Guide */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { step: "1", title: "تسجيل الدخول", desc: "ادخل بيانات المقيم للوصول إلى لوحة التقييم", icon: LogIn, color: "#01645e" },
-                  { step: "2", title: "إدخال بيانات الفرق", desc: "أضف أسماء الفرق المشاركة في الهاكاثون", icon: Users, color: "#3ab666" },
-                  { step: "3", title: "بدء التقييم", desc: "قيم كل فريق حسب المعايير الخمسة المحددة", icon: Star, color: "#c3e956" },
-                  { step: "4", title: "عرض النتائج", desc: "شاهد النتائج النهائية مرتبة حسب الدرجات", icon: Trophy, color: "#8b7632" },
-                ].map((item, index) => (
-                  <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="glass rounded-2xl p-6 border border-white/20">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg" style={{ backgroundColor: item.color }}>
-                        {item.step}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <item.icon className="w-5 h-5" style={{ color: item.color }} />
-                          <h4 className="font-bold text-[#01645e]">{item.title}</h4>
-                        </div>
-                        <p className="text-[#8b7632] text-sm">{item.desc}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="text-center pt-6">
-                <motion.button onClick={() => { setShowDemo(false); router.push("/login") }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-gradient-to-r from-[#01645e] to-[#3ab666] text-white px-8 py-4 text-lg font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
-                  ابدأ التقييم الآن
-                </motion.button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 dark:border-indigo-800 dark:border-t-indigo-400 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-indigo-600 dark:text-indigo-400 font-semibold">
+            {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+          </p>
+        </div>
       </div>
     )
   }
+
+  // Helper function للـ redirect حسب الدور
+  const handleDashboardClick = () => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    switch (user.role) {
+      case 'master':
+        router.push('/master')
+        break
+      case 'admin':
+        router.push('/admin/dashboard')
+        break
+      case 'judge':
+        router.push('/judge/dashboard')
+        break
+      case 'supervisor':
+        router.push('/supervisor/dashboard')
+        break
+      case 'expert':
+        router.push('/expert/dashboard')
+        break
+      case 'participant':
+        router.push('/participant/dashboard')
+        break
+      default:
+        router.push('/login')
+    }
+  }
+
+  // Landing Page للجميع - مسجلين وغير مسجلين
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#c3e956]/10 to-[#3ab666]/10 relative overflow-hidden">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-[#c3e956]/30 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center space-x-4 rtl:space-x-reverse">
-              <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Copy%20of%20%D8%A7%D9%84%D9%87%D9%88%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D8%B4%D8%AA%D8%B1%D9%83%D8%A9%20%D9%84%D9%87%D8%A7%D9%83%D8%A7%D8%AB%D9%88%D9%86%20%D8%A7%D9%84%D8%A7%D8%A8%D8%AA%D9%83%D8%A7%D8%B1%20%D9%81%D9%89%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AD%D9%83%D9%88%D9%85%D9%8A%D8%A9%20%20_20250811_071941_0000-mhYmT6CBMBAiGfKtW6ODkUAWW0nPfS.png"
-                alt="هاكاثون الابتكار في الخدمات الحكومية"
-                className="h-16 w-auto"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-[#01645e]">هاكاثون الابتكار الحكومي</h1>
-                <p className="text-sm text-[#8b7632]">نظام التقييم الاحترافي المتطور</p>
+    <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
+      {/* Hero Section - Inspired by devino.ca */}
+      <section className="relative overflow-hidden min-h-screen flex items-center">
+        {/* Background Animations */}
+        <div className="absolute inset-0">
+          <BackgroundAnimations />
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-32">
+          <div className="max-w-6xl mx-auto">
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <Badge className="px-6 py-3 text-sm font-medium bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 shadow-lg backdrop-blur-sm">
+                <Sparkles className="h-4 w-4 ml-2 inline animate-pulse" />
+                {t('hero.badge')}
+              </Badge>
+            </motion.div>
+
+            {/* Main Heading with Gradient Animation */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-center mb-8"
+            >
+              <h1 className={`text-5xl sm:text-6xl lg:text-8xl font-black tracking-tight mb-6 ${
+                language === 'ar' ? 'font-arabic' : ''
+              }`}>
+                <span className="block text-gray-900 dark:text-white mb-4">
+                  {t('hero.title.1')}
+                </span>
+                <span className="block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient-x bg-[length:200%_auto]">
+                  {t('hero.title.2')}
+                </span>
+              </h1>
+            </motion.div>
+
+            {/* Description */}
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-xl sm:text-2xl lg:text-3xl text-gray-600 dark:text-gray-300 text-center mb-12 max-w-4xl mx-auto leading-relaxed font-light"
+            >
+              {t('hero.description')}
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+            >
+              {user ? (
+                <Button 
+                  size="lg" 
+                  className="group relative bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white px-12 py-7 text-lg rounded-2xl shadow-2xl hover:shadow-indigo-500/50 dark:shadow-indigo-900/50 transition-all transform hover:scale-105"
+                  onClick={handleDashboardClick}
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Rocket className={`h-6 w-6 ${language === 'ar' ? 'ml-2' : 'mr-2'} group-hover:animate-bounce`} />
+                    {t('hero.cta.dashboard')}
+                  </span>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-400 to-purple-400 opacity-0 group-hover:opacity-20 transition-opacity blur-xl"></div>
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    size="lg" 
+                    className="group relative bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white px-12 py-7 text-lg rounded-2xl shadow-2xl hover:shadow-indigo-500/50 dark:shadow-indigo-900/50 transition-all transform hover:scale-105"
+                    onClick={() => router.push('/register')}
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Rocket className={`h-6 w-6 ${language === 'ar' ? 'ml-2' : 'mr-2'} group-hover:animate-bounce`} />
+                      {t('hero.cta.start')}
+                    </span>
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-400 to-purple-400 opacity-0 group-hover:opacity-20 transition-opacity blur-xl"></div>
+                  </Button>
+                  <Button 
+                    size="lg"
+                    variant="outline"
+                    className="px-12 py-7 text-lg rounded-2xl border-2 border-gray-300 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-gray-900 dark:text-white transition-all transform hover:scale-105"
+                    onClick={() => router.push('/login')}
+                  >
+                    <span className="flex items-center gap-2">
+                      {t('hero.cta.demo')}
+                      {language === 'ar' ? (
+                        <ArrowLeft className="h-5 w-5" />
+                      ) : (
+                        <ArrowRight className="h-5 w-5" />
+                      )}
+                    </span>
+                  </Button>
+                </>
+              )}
+            </motion.div>
+
+            {/* Trust Indicators */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="flex flex-wrap justify-center items-center gap-8 text-sm text-gray-600 dark:text-gray-400"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+                <span>{t('hero.check.1')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+                <span>{t('hero.check.2')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+                <span>{t('hero.check.3')}</span>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="hidden md:flex items-center space-x-6 rtl:space-x-reverse">
-              <nav className="flex space-x-8 rtl:space-x-reverse">
-                <a href="#features" className="text-[#01645e] hover:text-[#3ab666] font-medium transition-colors">المميزات</a>
-                <a href="#criteria" className="text-[#01645e] hover:text-[#3ab666] font-medium transition-colors">معايير التقييم</a>
-              </nav>
-              <Link href="/login" className="bg-gradient-to-r from-[#01645e] to-[#3ab666] text-white px-5 py-2.5 rounded-xl font-semibold shadow hover:from-[#014a46] hover:to-[#2d8f52]">
-                تسجيل الدخول
-              </Link>
+            {/* Floating Feature Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-24"
+            >
+              <FloatingCard
+                icon={<Code2 className="h-8 w-8" />}
+                title={language === 'ar' ? 'واجهة حديثة' : 'Modern UI'}
+                description={language === 'ar' ? 'تصميم عصري وسهل' : 'Beautiful & Easy'}
+                delay={0.6}
+              />
+              <FloatingCard
+                icon={<Brain className="h-8 w-8" />}
+                title={language === 'ar' ? 'ذكاء اصطناعي' : 'AI Powered'}
+                description={language === 'ar' ? 'تحليلات ذكية' : 'Smart Analytics'}
+                delay={0.7}
+              />
+              <FloatingCard
+                icon={<Shield className="h-8 w-8" />}
+                title={language === 'ar' ? 'آمن 100%' : '100% Secure'}
+                description={language === 'ar' ? 'حماية متقدمة' : 'Enterprise Security'}
+                delay={0.8}
+              />
+              <FloatingCard
+                icon={<Target className="h-8 w-8" />}
+                title={language === 'ar' ? 'دقة عالية' : 'High Precision'}
+                description={language === 'ar' ? 'نتائج موثوقة' : 'Reliable Results'}
+                delay={0.9}
+              />
             </motion.div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Hero Section */}
-      <section className="relative py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center lg:text-right">
-              <div className="mb-8">
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring", stiffness: 200 }} className="inline-block">
-                  <div className="bg-gradient-to-r from-[#01645e]/10 to-[#3ab666]/10 border border-[#01645e]/20 rounded-full px-6 py-3 mb-6">
-                    <span className="text-[#01645e] font-semibold text-lg">🏆 المنصة الرسمية للتقييم</span>
-                  </div>
-                </motion.div>
-
-                <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-                  <span className="bg-gradient-to-r from-[#01645e] to-[#3ab666] bg-clip-text text-transparent">نظام تقييم</span>
-                  <br />
-                  <span className="bg-gradient-to-r from-[#3ab666] to-[#c3e956] bg-clip-text text-transparent">هاكاثون الابتكار</span>
-                  <br />
-                  <span className="bg-gradient-to-r from-[#c3e956] to-[#8b7632] bg-clip-text text-transparent">الحكومي</span>
-                </h1>
-
-                <p className="text-xl md:text-2xl text-[#8b7632] mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                  منصة احترافية وتفاعلية مدعومة بأحدث التقنيات لتقييم وترتيب فرق الهاكاثون باستخدام معايير دقيقة ونظام تقييم متقدم يضمن العدالة والشفافية
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <motion.button onClick={() => setShowDemo(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-white/10 backdrop-blur-sm border border-white/20 text-[#01645e] px-10 py-5 text-xl font-bold rounded-2xl shadow-xl hover:bg-white/20 transition-all duration-300 flex items-center justify-center gap-3">
-                    <Play className="w-6 h-6" />
-                    شاهد الشرح التوضيحي
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right Content - Image */}
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, duration: 0.8 }} className="relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1000%20%D9%85%D9%8A%D8%AD%D8%A7-OcJeqRH84ElCNSZ3bbGOFHaUtukCye.png" alt="فريق هاكاثون الابتكار يعمل في بيئة تقنية متطورة" className="w-full h-auto object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#01645e]/20 to-transparent" />
-
-                {/* Floating Stats */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.6 }} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-[#01645e]">نشط الآن</div>
-                      <div className="text-sm text-[#8b7632]">جلسة تقييم مباشرة</div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.6 }} className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-[#01645e] to-[#3ab666] rounded-full flex items-center justify-center">
-                      <Star className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-[#01645e]">4.9/5</div>
-                      <div className="text-sm text-[#8b7632]">تقييم المستخدمين</div>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Decorative Elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-[#01645e]/20 to-[#3ab666]/20 rounded-full blur-xl" />
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-[#3ab666]/20 to-[#c3e956]/20 rounded-full blur-xl" />
-            </motion.div>
+      {/* Stats Section */}
+      <section className="py-20 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <AnimatedSection delay={0.1}>
+              <StatCard number={t('stats.1.number')} label={t('stats.1.label')} isWhite />
+            </AnimatedSection>
+            <AnimatedSection delay={0.2}>
+              <StatCard number={t('stats.2.number')} label={t('stats.2.label')} isWhite />
+            </AnimatedSection>
+            <AnimatedSection delay={0.3}>
+              <StatCard number={t('stats.3.number')} label={t('stats.3.label')} isWhite />
+            </AnimatedSection>
+            <AnimatedSection delay={0.4}>
+              <StatCard number={t('stats.4.number')} label={t('stats.4.label')} isWhite />
+            </AnimatedSection>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-16">
-            <div className="inline-block bg-gradient-to-r from-[#01645e]/10 to-[#3ab666]/10 border border-[#01645e]/20 rounded-full px-6 py-3 mb-6">
-              <span className="text-[#01645e] font-semibold">✨ لماذا نظامنا الأفضل؟</span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#01645e] mb-6">مميزات تجعلنا <span className="text-[#3ab666]">الخيار الأول</span></h2>
-            <p className="text-xl text-[#8b7632] max-w-3xl mx-auto leading-relaxed">نوفر تجربة تقييم شاملة ومتقدمة تضمن العدالة والشفافية مع أحدث التقنيات والمعايير العالمية</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: Trophy, title: "تقييم احترافي", desc: "نظام تقييم متقدم بمعايير واضحة ومحددة وفقاً لأفضل الممارسات العالمية", gradient: "from-[#01645e] to-[#3ab666]" },
-              { icon: Users, title: "إدارة الفرق", desc: "تنظيم وإدارة فرق الهاكاثون بسهولة مع إمكانية تتبع الأداء والتقدم", gradient: "from-[#3ab666] to-[#c3e956]" },
-              { icon: Target, title: "معايير دقيقة", desc: "5 معايير أساسية مع أوزان محددة تضمن تقييماً عادلاً وشاملاً", gradient: "from-[#c3e956] to-[#8b7632]" },
-              { icon: Star, title: "تجربة تفاعلية", desc: "واجهة سهلة الاستخدام وتفاعلية مع تصميم عصري ومتجاوب", gradient: "from-[#8b7632] to-[#01645e]" },
-            ].map((feature, index) => (
-              <motion.div key={index} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1, duration: 0.6 }} whileHover={{ scale: 1.05, y: -10 }} className="group relative">
-                <div className="glass rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 h-full border border-white/20 relative overflow-hidden">
-                  {/* Background Gradient */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-
-                  <div className="relative z-10">
-                    <div className="flex justify-center mb-6">
-                      <div className={`p-4 rounded-2xl bg-gradient-to-r ${feature.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                        <feature.icon className="w-10 h-10 text-white" />
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-bold text-[#01645e] mb-4 text-center group-hover:text-[#3ab666] transition-colors">{feature.title}</h3>
-                    <p className="text-[#8b7632] text-center leading-relaxed">{feature.desc}</p>
-                  </div>
-
-                  {/* Decorative Corner */}
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/10 to-transparent rounded-bl-3xl" />
-                </div>
-              </motion.div>
-            ))}
-          </div>
+      <section className="py-24 bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 relative overflow-hidden transition-colors">
+        <div className="absolute inset-0">
+          <BackgroundAnimations />
         </div>
-      </section>
-
-      {/* Criteria Section */}
-      <section id="criteria" className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-16">
-            <div className="inline-block bg-gradient-to-r from-[#01645e]/10 to-[#3ab666]/10 border border-[#01645e]/20 rounded-full px-6 py-3 mb-6">
-              <span className="text-[#01645e] font-semibold">📊 معايير التقييم</span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#01645e] mb-6">
-              <span className="text-[#3ab666]">خمسة معايير</span> أساسية
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <AnimatedSection className="text-center mb-16">
+            <Badge className="mb-4 px-4 py-2 bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800">
+              {t('features.badge')}
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              {t('features.title')}
             </h2>
-            <p className="text-xl text-[#8b7632] max-w-3xl mx-auto">
-              نظام تقييم شامل ومتوازن يغطي جميع جوانب المشروع من الفكرة إلى التنفيذ
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              {t('features.description')}
             </p>
-          </motion.div>
+          </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "الجدوى",
-                weight: "20%",
-                color: "#01645e",
-                icon: Target,
-                desc:
-                  "مدى قدرة الفكرة على تحقيق قيمة واضحة وعائد ملموس للمؤسسة، مع قابلية استدامتها على المدى الطويل، وتوازن التكلفة مع الفوائد المتوقعة.",
-              },
-              {
-                title: "ابتكارية الفكرة",
-                weight: "25%",
-                color: "#3ab666",
-                icon: Lightbulb,
-                desc:
-                  "مدى إبداع الفكرة وجديدتها. هل تقدم الفكرة حلولًا مبتكرة لتحديات أو احتياجات قائمة؟ هل هناك تفكير متجدد يعكس تميز الفكرة ويعزز من فعالية العمليات في المؤسسة؟",
-              },
-              {
-                title: "قابلية التطبيق",
-                weight: "25%",
-                color: "#c3e956",
-                icon: Cog,
-                desc:
-                  "إمكانية تنفيذ الفكرة باستخدام الموارد المتاحة ضمن المعايير والقيود المحددة. هل يمكن تطبيق الفكرة في الإطار الزمني والمالي المحدد؟ وهل الفكرة قابلة للتنفيذ ضمن البيئات والظروف المتاحة؟",
-              },
-              {
-                title: "التأثير على المؤسسة",
-                weight: "20%",
-                color: "#8b7632",
-                icon: TrendingUp,
-                desc:
-                  "يركز هذا المعيار على تأثير الفكرة في تحسين أداء المؤسسة. هل ستسهم الفكرة في تعزيز كفاءة العمل ورفع الإنتاجية داخل المؤسسة؟ وهل سيكون لها تأثير إيجابي على العمليات والنتائج التشغيلية؟",
-              },
-              {
-                title: "مهارات العرض",
-                weight: "10%",
-                color: "#01645e",
-                icon: Presentation,
-                desc:
-                  "يتم تقييم طريقة تقديم الفكرة من قبل الفريق. كيف يعرض الفريق فكرته بشكل احترافي ومقنع؟ هل العرض واضح ومنظم بطريقة تسهل فهم الفكرة من قبل المعنيين في المؤسسة؟",
-              },
-            ].map((criterion, index) => (
-              <motion.div key={index} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1, duration: 0.6 }} className="glass rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 h-full border border-white/20 relative overflow-hidden">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg" style={{ backgroundColor: criterion.color }}>
-                    {criterion.weight}
-                  </div>
-                  <h3 className="text-xl font-bold text-[#01645e]">{criterion.title}</h3>
-                </div>
-                <p className="text-[#8b7632]">{criterion.desc}</p>
-              </motion.div>
-            ))}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <AnimatedSection delay={0.1}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Building2 className="h-8 w-8" />}
+                  title={t('feature.1.title')}
+                  description={t('feature.1.description')}
+                  color="indigo"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.2}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Users className="h-8 w-8" />}
+                  title={t('feature.2.title')}
+                  description={t('feature.2.description')}
+                  color="purple"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.3}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Award className="h-8 w-8" />}
+                  title={t('feature.3.title')}
+                  description={t('feature.3.description')}
+                  color="pink"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.4}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<BarChart3 className="h-8 w-8" />}
+                  title={t('feature.4.title')}
+                  description={t('feature.4.description')}
+                  color="indigo"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.5}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Shield className="h-8 w-8" />}
+                  title={t('feature.5.title')}
+                  description={t('feature.5.description')}
+                  color="purple"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.6}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Zap className="h-8 w-8" />}
+                  title={t('feature.6.title')}
+                  description={t('feature.6.description')}
+                  color="pink"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.7}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Globe className="h-8 w-8" />}
+                  title={t('feature.7.title')}
+                  description={t('feature.7.description')}
+                  color="indigo"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.8}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Database className="h-8 w-8" />}
+                  title={t('feature.8.title')}
+                  description={t('feature.8.description')}
+                  color="purple"
+                />
+              </HoverCard>
+            </AnimatedSection>
+            <AnimatedSection delay={0.9}>
+              <HoverCard>
+                <FeatureCard 
+                  icon={<Clock className="h-8 w-8" />}
+                  title={t('feature.9.title')}
+                  description={t('feature.9.description')}
+                  color="pink"
+                />
+              </HoverCard>
+            </AnimatedSection>
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="py-8 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <Link href="/login" className="bg-gradient-to-r from-[#01645e] to-[#3ab666] text-white px-10 py-5 text-xl font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 inline-flex items-center justify-center">
-            ابدأ التقييم الآن
-          </Link>
+      {/* Pricing Section */}
+      <section className="py-24 bg-white dark:bg-gray-900 relative overflow-hidden transition-colors">
+        <div className="absolute inset-0">
+          <BackgroundAnimations />
+        </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 px-4 py-2 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+              {t('pricing.badge')}
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              {t('pricing.title')}
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              {t('pricing.description')}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            <PricingCard 
+              name="Free"
+              price={t('pricing.free')}
+              description="للمبتدئين والتجربة"
+              features={[
+                "1 هاكاثون",
+                "حتى 50 مشارك",
+                "3 محكمين",
+                "تقارير أساسية",
+                "دعم Email"
+              ]}
+              color="gray"
+              popular={false}
+              language={language}
+              t={t}
+            />
+            <PricingCard 
+              name="Starter"
+              price="$29"
+              period={t('pricing.monthly')}
+              description="للجامعات والمؤسسات الصغيرة"
+              features={[
+                "5 هاكاثونات",
+                "حتى 200 مشارك",
+                "10 محكمين",
+                "تقارير متقدمة",
+                "دعم Email + Chat",
+                "شهادات مخصصة"
+              ]}
+              color="indigo"
+              popular={false}
+              language={language}
+              t={t}
+            />
+            <PricingCard 
+              name="Professional"
+              price="$99"
+              period={t('pricing.monthly')}
+              description="للشركات والمؤسسات المتوسطة"
+              features={[
+                "هاكاثونات غير محدودة",
+                "حتى 1000 مشارك",
+                "محكمين غير محدود",
+                "تقارير كاملة + AI",
+                "دعم Priority",
+                "API Access",
+                "Custom Domain",
+                "White Label"
+              ]}
+              color="purple"
+              popular={true}
+              language={language}
+              t={t}
+            />
+            <PricingCard 
+              name="Enterprise"
+              price={t('pricing.custom')}
+              description="للمؤسسات الكبيرة"
+              features={[
+                "كل شيء غير محدود",
+                "SLA مضمون",
+                "Dedicated Support",
+                "On-premise متاح",
+                "Custom Development",
+                "Training Sessions",
+                "Security Audit"
+              ]}
+              color="pink"
+              popular={false}
+              language={language}
+              t={t}
+            />
+          </div>
         </div>
       </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 relative overflow-hidden transition-colors">
+        <div className="absolute inset-0 opacity-20">
+          <BackgroundAnimations />
+        </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <AnimatedSection>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              {t('cta.title')}
+            </h2>
+            <p className="text-xl text-indigo-100 mb-12 max-w-2xl mx-auto">
+              {t('cta.description')}
+            </p>
+            <RippleButton 
+              size="lg"
+              className="bg-white text-indigo-600 hover:bg-indigo-50 px-12 py-7 text-lg rounded-2xl shadow-2xl hover:shadow-white/20 transition-all transform hover:scale-105"
+              onClick={() => router.push('/register')}
+            >
+              <Rocket className={`h-6 w-6 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+              {t('cta.button')}
+            </RippleButton>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <TestimonialsSection />
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* Footer */}
-      <footer className="bg-white/80 backdrop-blur-md shadow-inner border-t border-[#c3e956]/30 py-8 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-[#8b7632]">
-            جميع الحقوق محفوظة &copy; {new Date().getFullYear()} هاكاثون الابتكار الحكومي
-          </p>
+      <footer className="bg-gray-900 dark:bg-black text-gray-300 dark:text-gray-400 py-16 transition-colors">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <Rocket className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold text-white">HackPro</span>
+              </div>
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                {t('footer.tagline')}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-white font-semibold mb-4">{t('footer.product')}</h3>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.features')}</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.pricing')}</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.security')}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-semibold mb-4">{t('footer.company')}</h3>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.about')}</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.blog')}</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.contact')}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-semibold mb-4">{t('footer.legal')}</h3>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.privacy')}</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.terms')}</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">{t('footer.license')}</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 dark:border-gray-900 pt-8 text-center text-sm text-gray-400 dark:text-gray-500">
+            <p>{t('footer.copyright')}</p>
+          </div>
         </div>
       </footer>
+    </div>
+  )
+}
 
-      {/* Background Circles */}
-      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[#c3e956]/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/4" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#01645e]/10 rounded-full blur-[150px] translate-x-1/2 translate-y-1/4" />
+function FloatingCard({
+  icon,
+  title,
+  description,
+  delay
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  delay: number
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay }}
+      className="group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-400/5 dark:to-purple-400/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="relative z-10">
+        <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-lg">
+          {icon}
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+      </div>
+    </motion.div>
+  )
+}
+
+function FeatureCard({ 
+  icon, 
+  title, 
+  description, 
+  color 
+}: { 
+  icon: React.ReactNode
+  title: string
+  description: string
+  color: 'indigo' | 'purple' | 'pink'
+}) {
+  const colorClasses = {
+    indigo: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400',
+    purple: 'bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400',
+    pink: 'bg-pink-100 dark:bg-pink-950 text-pink-600 dark:text-pink-400'
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-gray-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 group">
+      <div className={`w-14 h-14 rounded-xl ${colorClasses[color]} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
+    </div>
+  )
+}
+
+function StatCard({ number, label, isWhite = false }: { number: string; label: string; isWhite?: boolean }) {
+  // Extract number from string like "50K+" -> 50000
+  const cleanNumber = number.replace(/[^0-9]/g, '')
+  const numericValue = cleanNumber ? parseInt(cleanNumber) : 0
+  const suffix = number.replace(/[0-9]/g, '')
+  
+  const textColor = isWhite 
+    ? "text-white" 
+    : "text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+  
+  const labelColor = isWhite
+    ? "text-white/90"
+    : "text-gray-600 dark:text-gray-400"
+  
+  return (
+    <div className="group">
+      {numericValue > 0 ? (
+        <AnimatedCounter 
+          end={numericValue} 
+          suffix={suffix}
+          className={`text-4xl md:text-5xl font-bold mb-2 transition-all duration-300 ${textColor}`}
+        />
+      ) : (
+        <div className={`text-4xl md:text-5xl font-bold mb-2 transition-all duration-300 ${textColor}`}>
+          {number}
+        </div>
+      )}
+      <div className={`text-sm md:text-base font-medium ${labelColor}`}>{label}</div>
+    </div>
+  )
+}
+
+function PricingCard({ 
+  name, 
+  price, 
+  period,
+  description, 
+  features, 
+  color,
+  popular,
+  language,
+  t
+}: { 
+  name: string
+  price: string
+  period?: string
+  description: string
+  features: string[]
+  color: 'gray' | 'indigo' | 'purple' | 'pink'
+  popular: boolean
+  language: 'ar' | 'en'
+  t: (key: string) => string
+}) {
+  const colorClasses = {
+    gray: {
+      border: 'border-gray-200 dark:border-gray-800',
+      badge: 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300',
+      button: 'bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 text-white'
+    },
+    indigo: {
+      border: 'border-indigo-200 dark:border-indigo-800',
+      badge: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300',
+      button: 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white'
+    },
+    purple: {
+      border: 'border-purple-200 dark:border-purple-800 ring-2 ring-purple-500 dark:ring-purple-600',
+      badge: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
+      button: 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white'
+    },
+    pink: {
+      border: 'border-pink-200 dark:border-pink-800',
+      badge: 'bg-pink-100 dark:bg-pink-950 text-pink-700 dark:text-pink-300',
+      button: 'bg-pink-600 hover:bg-pink-700 dark:bg-pink-500 dark:hover:bg-pink-600 text-white'
+    }
+  }
+
+  return (
+    <div className={`relative bg-white dark:bg-gray-900 rounded-2xl p-8 border-2 ${colorClasses[color].border} hover:shadow-2xl transition-all duration-300 ${popular ? 'transform scale-105' : ''}`}>
+      {popular && (
+        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+          <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white px-4 py-1 shadow-lg">
+            <Star className={`h-3 w-3 ${language === 'ar' ? 'ml-1' : 'mr-1'} inline fill-current`} />
+            {t('pricing.popular')}
+          </Badge>
+        </div>
+      )}
+      <div className="mb-6">
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{name}</h3>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{description}</p>
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl font-bold text-gray-900 dark:text-white">{price}</span>
+          {period && <span className="text-gray-600 dark:text-gray-400">{period}</span>}
+        </div>
+      </div>
+      <ul className="space-y-3 mb-8">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-start gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />
+            <span className="text-gray-700 dark:text-gray-300 text-sm">{feature}</span>
+          </li>
+        ))}
+      </ul>
+      <Button 
+        className={`w-full ${colorClasses[color].button}`}
+        size="lg"
+      >
+        {t('pricing.cta')}
+        {language === 'ar' ? (
+          <ArrowLeft className="mr-2 h-4 w-4" />
+        ) : (
+          <ArrowRight className="ml-2 h-4 w-4" />
+        )}
+      </Button>
     </div>
   )
 }
